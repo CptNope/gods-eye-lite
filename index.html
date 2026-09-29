@@ -13,7 +13,7 @@
     script-src 'self' https://cdn.jsdelivr.net 'wasm-unsafe-eval';
     worker-src 'self' blob: https://cdn.jsdelivr.net;
     style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net;
-    img-src 'self' data: blob: https://cdn.jsdelivr.net https://server.arcgisonline.com https://gibs.earthdata.nasa.gov https://*.basemaps.cartocdn.com https://tilecache.rainviewer.com https://nowcoast.noaa.gov https://*.cesium.com https://tile.googleapis.com;
+    img-src 'self' data: blob: https://cdn.jsdelivr.net https://server.arcgisonline.com https://gibs.earthdata.nasa.gov https://*.basemaps.cartocdn.com https://tilecache.rainviewer.com https://nowcoast.noaa.gov https://*.cesium.com https://tile.googleapis.com https://cctv.austinmobility.io https://cwwp2.dot.ca.gov https://s3-eu-west-1.amazonaws.com https://511on.ca https://weathercam.digitraffic.fi https://www.drivebc.ca https://ristmikud.tallinn.ee https://tarktee.transpordiamet.ee https://webcams.transport.nsw.gov.au https://trafficcam.calgary.ca https://webcam.warendorf.de;
     connect-src 'self' https://cdn.jsdelivr.net https://celestrak.org https://earthquake.usgs.gov https://ll.thespacedevs.com https://server.arcgisonline.com https://gibs.earthdata.nasa.gov https://*.basemaps.cartocdn.com https://api.rainviewer.com https://tilecache.rainviewer.com https://api.open-meteo.com https://nowcoast.noaa.gov https://mapservices.weather.noaa.gov https://api.weather.gov https://*.cesium.com https://tile.googleapis.com https://*.workers.dev;
     font-src 'self' data: https://cdn.jsdelivr.net;
     manifest-src 'self';
@@ -72,6 +72,13 @@
     </section>
 
     <section>
+      <h2>Cameras</h2>
+      <label class="row"><input type="checkbox" data-layer="cctv" /> <span>📷 Public traffic cameras</span><em data-status="cctv"></em></label>
+      <button id="nearestCam" class="wide">🎯 Nearest camera to view</button>
+      <p class="hint">Live stills from city and highway operators in London, California, Finland, British Columbia, Tallinn, Austin, Sydney and Calgary. Click a camera to see its latest frame.</p>
+    </section>
+
+    <section>
       <h2>Weather</h2>
       <label class="row"><input type="checkbox" data-layer="radar" /> <span>🌧️ Rain radar</span><em data-status="radar"></em></label>
       <div class="sub">
@@ -124,7 +131,7 @@
 
     <footer class="credits">
       Inspired by <a href="https://github.com/bilawalsidhu/gods-eye-view" target="_blank" rel="noopener">God's Eye View</a> (MIT).
-      Data: adsb.lol, OpenSky, CelesTrak, USGS, The Space Devs, NOAA (nowCOAST, NHC, NWS), RainViewer, Open-Meteo, Esri, NASA GIBS, OSM/CARTO.
+      Cameras: TfL, Caltrans, Fintraffic, DriveBC, City of Tallinn, Austin TPW, Live Traffic NSW, City of Calgary (catalog via God's Eye View loaders). Data: adsb.lol, OpenSky, CelesTrak, USGS, The Space Devs, NOAA (nowCOAST, NHC, NWS), RainViewer, Open-Meteo, Esri, NASA GIBS, OSM/CARTO.
       Exploratory only — not for navigation or safety decisions.
     </footer>
   </aside>

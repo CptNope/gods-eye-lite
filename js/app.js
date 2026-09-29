@@ -5,6 +5,7 @@ import { QuakesLayer } from './layers/quakes.js';
 import { LaunchesLayer } from './layers/launches.js';
 import { RadarLayer, CloudsLayer, LightningLayer, WindLayer, CyclonesLayer, AlertsLayer } from './layers/weather.js';
 import { Timeline } from './timeline.js';
+import { CctvLayer } from './layers/cctv.js';
 import { Styles, STYLE_ORDER } from './styles.js';
 import { vault } from './vault.js';
 import { initKeysUI, keyFor } from './keys.js';
@@ -160,6 +161,7 @@ const layers = {
   wind: new WindLayer(viewer),
   cyclones: new CyclonesLayer(viewer),
   alerts: new AlertsLayer(viewer),
+  cctv: new CctvLayer(viewer),
 };
 const active = new Set();
 
@@ -177,6 +179,16 @@ document.querySelectorAll('[data-layer]').forEach((box) => box.addEventListener(
 $('#satGroup').value = prefs.satGroup || 'visual';
 layers.satellites.group = $('#satGroup').value;
 $('#satGroup').addEventListener('change', (e) => { prefs.satGroup = e.target.value; savePrefs(); layers.satellites.setGroup(e.target.value); });
+
+$('#nearestCam').addEventListener('click', async () => {
+  if (!active.has('cctv')) setLayer('cctv', true);
+  if (!layers.cctv.loaded) await layers.cctv.load();
+  const c = viewCenter();
+  const hit = layers.cctv.nearest(c.lat, c.lon);
+  if (!hit) return toast('No camera catalog loaded');
+  select({ kind: 'camera', layer: 'cctv', cam: hit.cam });
+  toast(`Nearest camera: ${fmt.num(hit.km, hit.km < 10 ? 1 : 0)} km away`);
+});
 
 $('#radarSource').value = prefs.radarSource || 'global';
 layers.radar.source = $('#radarSource').value;
@@ -232,7 +244,7 @@ function select(id) {
   $('#card').hidden = false;
   if (window.innerWidth < 640) $('#panel').classList.add('closed'); // card and panel share the screen on phones
   const p = positionOfSelected();
-  const range = { satellite: 2.5e6, aircraft: 40000, storm: 1.8e6, alert: 600000 }[id.kind] || 400000;
+  const range = { satellite: 2.5e6, aircraft: 40000, storm: 1.8e6, alert: 600000, camera: 1200 }[id.kind] || 400000;
   if (p) flyToPos(p, range);
   if (canFollow) $('#followBtn').addEventListener('click', () => (following ? stopFollow() : startFollow()));
 }

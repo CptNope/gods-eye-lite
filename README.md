@@ -12,6 +12,7 @@ A static, installable PWA that puts the **keyless** feeds from
 | 🛰️ Satellites (SGP4 in-browser, orbit path on click) | CelesTrak TLEs + satellite.js | none |
 | 🌍 Earthquakes, last 24h | USGS | none |
 | 🚀 Upcoming launches + countdown list | Launch Library 2 (The Space Devs) | none |
+| 📷 ~2,400 public traffic cameras with live stills: London, California, Finland, British Columbia, Tallinn, Austin, Sydney, Calgary | Catalog built daily on GitHub Actions with God's Eye View's MIT CCTV loaders; images load straight from each operator | none |
 | 🌧️ Rain radar with 3-hour playback | RainViewer (global) or NOAA nowCOAST (US high-res) | none |
 | ☁️ Satellite clouds (IR) + ⚡ lightning density | NOAA nowCOAST | none |
 | 🌬️ Animated 10 m wind | Open-Meteo | none |
@@ -51,6 +52,10 @@ Tested in a real browser on 2026-09-29: adsb.lol, OpenSky, airplanes.live, adsb.
 Any later change under `relay/` redeploys automatically.
 
 Free tier = 100,000 requests/day; with the built-in caching one active viewer uses roughly 400 requests/hour.
+
+## Traffic cameras: how the catalog works
+
+Most operators' camera *lists* refuse browser requests (no CORS), but their still *images* embed fine. So `scripts/build-cctv.mjs` runs inside the Pages workflow: it checks out God's Eye View at a pinned commit (`GEV_SHA` in `.github/workflows/pages.yml`), runs its CCTV loaders on the GitHub runner, keeps cameras whose still image is on an allowed host, and publishes `data/cctv.json` (~590 KB, gzip-served). A daily scheduled run keeps it fresh; if a source is down the deploy still ships. Image hosts are allowlisted in both the script and the page's CSP `img-src` — add a host to both to add a region. Not included: Ontario 511 (list unreachable from GitHub runners at build time), TxDOT (snapshot API isn't a plain image), Delaware (video-only), Estonia highways.
 
 ## API keys: bring your own, encrypted on your device
 
