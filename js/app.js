@@ -187,7 +187,7 @@ $('#nearestCam').addEventListener('click', async () => {
   const hit = layers.cctv.nearest(c.lat, c.lon);
   if (!hit) return toast('No camera catalog loaded');
   select({ kind: 'camera', layer: 'cctv', cam: hit.cam });
-  toast(`Nearest camera: ${fmt.num(hit.km, hit.km < 10 ? 1 : 0)} km away`);
+  toast(`Nearest camera: ${hit.km < 1 ? `${Math.round(hit.km * 1000)} m` : `${fmt.num(hit.km, hit.km < 10 ? 1 : 0)} km`} away`);
 });
 
 $('#radarSource').value = prefs.radarSource || 'global';
