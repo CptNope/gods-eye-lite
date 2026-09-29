@@ -37,7 +37,7 @@ export class FlightsLayer {
   async poll() {
     if (this.busy) return;
     const relay = relayUrl();
-    if (!relay) { setStatus(this.id, 'needs relay', 'warn'); return; }
+    if (!relay) { setStatus(this.id, 'parked · needs relay', 'warn'); return; }
     this.busy = true;
     try {
       const list = this.mode === 'military' ? await this.fetchMil(relay) : await this.fetchCivil(relay);

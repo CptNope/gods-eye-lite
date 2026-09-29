@@ -3,10 +3,8 @@ name: Deploy flight relay (Cloudflare Worker)
 # Needs two repository secrets (Settings → Secrets and variables → Actions):
 #   CLOUDFLARE_API_TOKEN  — token from the "Edit Cloudflare Workers" template
 #   CLOUDFLARE_ACCOUNT_ID — shown on the right side of the Cloudflare dashboard's Workers & Pages page
+# Manual only while flights are parked (Cloudflare egress is blocked by the flight feeds).
 on:
-  push:
-    branches: [main]
-    paths: ['relay/**', '.github/workflows/relay.yml']
   workflow_dispatch:
 
 permissions:

@@ -32,7 +32,11 @@ Plus: CRT / NVG / FLIR / Noir sensor shaders (keys `1`–`5`), click-to-inspect 
 
 Everything uses relative paths, so it works under a project sub-path or a custom domain unchanged.
 
-## Flights need a tiny relay (5 minutes, free)
+## Flights (parked)
+
+**Status, 2026-09-29:** a Cloudflare Worker relay was deployed and tested, but every free flight source refuses Cloudflare's network — adsb.lol `429`, airplanes.live `403`, adsb.fi `403`, OpenSky `522` (connection refused before any login, so an OpenSky account doesn't help). Flights are therefore off by default. To revive them, run the same relay logic on an ordinary server (e.g. a small DigitalOcean droplet) after confirming `curl -s -o /dev/null -w "%{http_code}" https://api.adsb.lol/v2/mil` returns `200` from it, then add that host to `connect-src` in the CSP and set `RELAY_URL`.
+
+### Original relay notes
 
 Tested in a real browser on 2026-09-29: adsb.lol, OpenSky, airplanes.live, adsb.fi and adsb.one all refuse direct browser requests from other websites (no CORS header). Everything else — CelesTrak, USGS, Launch Library 2, Esri, NASA GIBS, CARTO and the CDN — works directly.
 

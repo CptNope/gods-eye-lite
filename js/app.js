@@ -367,7 +367,7 @@ window.addEventListener('offline', () => toast('Offline — showing last known d
 // ---------- Boot ----------
 const fromHash = applyHash();
 styles.set(fromHash.style || prefs.style || 'normal');
-const startLayers = fromHash.layers || prefs.layers || ['flights', 'satellites', 'quakes'];
+const startLayers = fromHash.layers || prefs.layers || ['satellites', 'quakes'];
 for (const id of startLayers) setLayer(id, true);
 for (const id of Object.keys(layers)) if (!startLayers.includes(id)) setLayer(id, false);
 applyKeys();
