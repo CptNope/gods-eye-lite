@@ -180,6 +180,7 @@ function select(id) {
   const canFollow = id.kind === 'aircraft' || id.kind === 'satellite';
   $('#cardBody').innerHTML = L.card(id) + (canFollow ? '<button class="track" id="followBtn">🎯 Follow</button>' : '');
   $('#card').hidden = false;
+  if (window.innerWidth < 640) $('#panel').classList.add('closed'); // card and panel share the screen on phones
   const p = positionOfSelected();
   if (p) flyToPos(p, id.kind === 'satellite' ? 2.5e6 : id.kind === 'aircraft' ? 40000 : 400000);
   if (canFollow) $('#followBtn').addEventListener('click', () => (following ? stopFollow() : startFollow()));
@@ -240,7 +241,10 @@ $('#styles').addEventListener('click', (e) => {
   if (s) { styles.set(s); prefs.style = s; savePrefs(); }
 });
 document.addEventListener('keydown', (e) => {
-  if (e.target.closest('input, select, textarea, dialog')) return;
+  // Only swallow keys while typing; checkboxes/buttons keep focus after a click and shouldn't block shortcuts.
+  const t = e.target instanceof Element ? e.target : null;
+  if (t && (t.closest('dialog, textarea, select') || (t.matches('input') && !['checkbox', 'radio', 'button'].includes(t.type)))) return;
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
   const n = Number(e.key);
   if (n >= 1 && n <= STYLE_ORDER.length) { styles.set(STYLE_ORDER[n - 1]); prefs.style = STYLE_ORDER[n - 1]; savePrefs(); }
   if (e.key === 'h' || e.key === 'H') document.body.classList.toggle('no-hud');
