@@ -3,6 +3,8 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [main]
+  schedule:
+    - cron: '17 9 * * *' # daily: refresh the CCTV catalog
   workflow_dispatch:
 
 permissions:
@@ -14,6 +16,11 @@ concurrency:
   group: pages
   cancel-in-progress: true
 
+env:
+  # God's Eye View commit whose MIT-licensed CCTV loaders build data/cctv.json.
+  # Bump deliberately after reviewing upstream changes.
+  GEV_SHA: e7707d9a0f34d9fbffc300023c319f95caa5be30
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -22,6 +29,18 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Build CCTV catalog
+        # A camera-source outage must never block a site deploy; the app shows "catalog unavailable".
+        continue-on-error: true
+        run: |
+          git init -q /tmp/gev && cd /tmp/gev
+          git remote add origin https://github.com/bilawalsidhu/gods-eye-view.git
+          git fetch -q --depth 1 origin "$GEV_SHA" && git checkout -q FETCH_HEAD
+          cd "$GITHUB_WORKSPACE"
+          GEV_DIR=/tmp/gev node scripts/build-cctv.mjs data/cctv.json
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
