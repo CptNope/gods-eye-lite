@@ -1,0 +1,9 @@
+# Cloudflare Worker config for the flight relay. Deployed by .github/workflows/relay.yml.
+name = "gel-relay"
+main = "worker.js"
+compatibility_date = "2026-09-01"
+workers_dev = true
+
+[vars]
+# Only these sites may use the relay (comma-separated). Add http://localhost:8080 for local testing.
+ALLOWED_ORIGINS = "https://cptnope.github.io"

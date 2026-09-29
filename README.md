@@ -36,13 +36,15 @@ Everything uses relative paths, so it works under a project sub-path or a custom
 
 Tested in a real browser on 2026-09-29: adsb.lol, OpenSky, airplanes.live, adsb.fi and adsb.one all refuse direct browser requests from other websites (no CORS header). Everything else — CelesTrak, USGS, Launch Library 2, Esri, NASA GIBS, CARTO and the CDN — works directly.
 
-`relay/worker.js` is a locked-down Cloudflare Worker that forwards **only** the three flight endpoints, adds CORS for your site, and caches for 10–15 s:
+`relay/worker.js` is a locked-down Cloudflare Worker that forwards **only** the three flight endpoints, adds CORS for your site, and caches for 10–15 s. It deploys itself from GitHub:
 
-1. [dash.cloudflare.com](https://dash.cloudflare.com) → **Workers & Pages → Create → Create Worker** → name it `gel-relay` → **Deploy**.
-2. **Edit code** → replace everything with `relay/worker.js` → **Deploy**.
-3. Worker **Settings → Variables and Secrets → Add** `ALLOWED_ORIGINS` = `https://<your-user>.github.io` (add `,http://localhost:8080` for local testing).
-4. Put the Worker URL (e.g. `https://gel-relay.<you>.workers.dev`) in `js/config.js` → `RELAY_URL`, commit, and Pages redeploys.
-   (Or paste it under **⚡ Power up → Flight relay URL** to try it without committing.)
+1. **Cloudflare:** [dash.cloudflare.com](https://dash.cloudflare.com) → *Workers & Pages*. If it asks, pick your free `workers.dev` subdomain. Copy the **Account ID** shown on that page.
+2. **API token:** *My Profile → API Tokens → Create Token → "Edit Cloudflare Workers"* template → Account Resources: your account → Zone Resources: *All zones* (or none) → Create. Copy it (shown once).
+3. **GitHub:** repo *Settings → Secrets and variables → Actions → New repository secret*: `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
+4. **Actions → "Deploy flight relay" → Run workflow.** The log prints the Worker URL (`https://gel-relay.<subdomain>.workers.dev`).
+5. Put that URL in `js/config.js` → `RELAY_URL` and push. Allowed sites are set in `relay/wrangler.toml` (`ALLOWED_ORIGINS`).
+
+Any later change under `relay/` redeploys automatically.
 
 Free tier = 100,000 requests/day; with the built-in caching one active viewer uses roughly 400 requests/hour.
 

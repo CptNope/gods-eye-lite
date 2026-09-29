@@ -2,8 +2,9 @@
 // adsb.lol and OpenSky don't send CORS headers for other sites, so browsers can't call them directly.
 // This Worker forwards ONLY the flight endpoints the app uses, adds CORS for your site, and caches briefly.
 //
-// Deploy: Cloudflare dashboard → Workers & Pages → Create → "Hello World" worker → Edit code →
-// paste this file → Deploy. Then Settings → Variables → add ALLOWED_ORIGINS (see below).
+// Deploy: automatic via .github/workflows/relay.yml (needs CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID
+// repo secrets). ALLOWED_ORIGINS comes from wrangler.toml. Manual alternative: paste this file into a
+// dashboard-created Worker and add ALLOWED_ORIGINS under Settings → Variables.
 
 const ROUTES = [
   // civil flights around a point (adsb.lol caps radius at 250 nm)
