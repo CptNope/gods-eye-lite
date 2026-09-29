@@ -3,8 +3,29 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <!--
+    Content-Security-Policy: the page may only load code from itself + jsDelivr, and may only talk to the
+    listed data providers. This is what keeps an unlocked API key from being sent anywhere else.
+    Adding a provider = adding its host to connect-src (and img-src for tile hosts).
+  -->
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'self';
+    script-src 'self' https://cdn.jsdelivr.net 'wasm-unsafe-eval';
+    worker-src 'self' blob: https://cdn.jsdelivr.net;
+    style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net;
+    img-src 'self' data: blob: https://cdn.jsdelivr.net https://server.arcgisonline.com https://gibs.earthdata.nasa.gov https://*.basemaps.cartocdn.com https://tilecache.rainviewer.com https://nowcoast.noaa.gov https://*.cesium.com https://tile.googleapis.com;
+    connect-src 'self' https://cdn.jsdelivr.net https://celestrak.org https://earthquake.usgs.gov https://ll.thespacedevs.com https://server.arcgisonline.com https://gibs.earthdata.nasa.gov https://*.basemaps.cartocdn.com https://api.rainviewer.com https://tilecache.rainviewer.com https://api.open-meteo.com https://nowcoast.noaa.gov https://mapservices.weather.noaa.gov https://api.weather.gov https://*.cesium.com https://tile.googleapis.com https://*.workers.dev;
+    font-src 'self' data: https://cdn.jsdelivr.net;
+    manifest-src 'self';
+    media-src 'none';
+    object-src 'none';
+    frame-src 'none';
+    base-uri 'self';
+    form-action 'self'
+  " />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
   <title>God's Eye Lite</title>
-  <meta name="description" content="Live open-source spatial intelligence on a 3D globe — flights, satellites, earthquakes and launches from free public feeds." />
+  <meta name="description" content="Live open-source spatial intelligence on a 3D globe — satellites, earthquakes, launches, weather and flights from free public feeds." />
   <meta name="theme-color" content="#05080a" />
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="icon" href="./icons/icon-192.png" />
@@ -13,7 +34,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cesium@1.121.0/Build/Cesium/Widgets/widgets.css" />
   <link rel="stylesheet" href="./css/app.css" />
-  <script>window.CESIUM_BASE_URL = "https://cdn.jsdelivr.net/npm/cesium@1.121.0/Build/Cesium/";</script>
+  <script src="./js/boot.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/cesium@1.121.0/Build/Cesium/Cesium.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/satellite.js@5.0.0/dist/satellite.min.js"></script>
 </head>
@@ -27,6 +48,7 @@
   </header>
 
   <button class="fab" id="panelToggle" aria-label="Toggle panel">☰</button>
+  <button class="fab lock" id="lockChip" hidden aria-label="Key vault"></button>
 
   <aside class="panel" id="panel">
     <section>
@@ -50,6 +72,23 @@
     </section>
 
     <section>
+      <h2>Weather</h2>
+      <label class="row"><input type="checkbox" data-layer="radar" /> <span>🌧️ Rain radar</span><em data-status="radar"></em></label>
+      <div class="sub">
+        <select id="radarSource" aria-label="Radar source">
+          <option value="global" selected>Global (RainViewer, 10-min)</option>
+          <option value="noaa">US high-res (NOAA, ~4-min)</option>
+        </select>
+      </div>
+      <label class="row"><input type="checkbox" data-layer="clouds" /> <span>☁️ Satellite clouds (IR)</span><em data-status="clouds"></em></label>
+      <label class="row"><input type="checkbox" data-layer="lightning" /> <span>⚡ Lightning density</span><em data-status="lightning"></em></label>
+      <label class="row"><input type="checkbox" data-layer="wind" /> <span>🌬️ Wind (10 m)</span><em data-status="wind"></em></label>
+      <label class="row"><input type="checkbox" data-layer="cyclones" /> <span>🌀 Tropical cyclones</span><em data-status="cyclones"></em></label>
+      <label class="row"><input type="checkbox" data-layer="alerts" /> <span>⚠️ NWS alerts (US)</span><em data-status="alerts"></em></label>
+      <p class="hint">Radar, clouds and lightning share the timeline at the bottom — scrub back 3 hours or press ▶. Weather imagery is hidden while Photorealistic 3D is on.</p>
+    </section>
+
+    <section>
       <h2>Basemap</h2>
       <div class="seg" id="basemap">
         <button data-base="esri" class="on">Satellite</button>
@@ -57,7 +96,7 @@
         <button data-base="osm">Streets</button>
         <button data-base="dark">Dark</button>
       </div>
-      <label class="row"><input type="checkbox" id="photoreal" /> <span>Photorealistic 3D</span><em id="photorealStatus">needs token</em></label>
+      <label class="row"><input type="checkbox" id="photoreal" /> <span>Photorealistic 3D</span><em id="photorealStatus">needs key</em></label>
     </section>
 
     <section>
@@ -79,15 +118,25 @@
 
     <section class="actions">
       <button id="shareBtn">🔗 Copy share link</button>
-      <button id="settingsBtn">⚡ Power up</button>
+      <button id="settingsBtn">⚡ Power up (API keys)</button>
       <button id="installBtn" hidden>⬇ Install app</button>
     </section>
 
     <footer class="credits">
       Inspired by <a href="https://github.com/bilawalsidhu/gods-eye-view" target="_blank" rel="noopener">God's Eye View</a> (MIT).
-      Data: adsb.lol, OpenSky, CelesTrak, USGS, The Space Devs, Esri, NASA GIBS, OSM. Exploratory only — not for navigation or safety decisions.
+      Data: adsb.lol, OpenSky, CelesTrak, USGS, The Space Devs, NOAA (nowCOAST, NHC, NWS), RainViewer, Open-Meteo, Esri, NASA GIBS, OSM/CARTO.
+      Exploratory only — not for navigation or safety decisions.
     </footer>
   </aside>
+
+  <div class="timeline" id="timeline" hidden>
+    <button id="tlBack" aria-label="Back 10 minutes">⏮</button>
+    <button id="tlPlay" aria-label="Play">▶</button>
+    <button id="tlFwd" aria-label="Forward 10 minutes">⏭</button>
+    <input type="range" id="tlSlider" aria-label="Weather time" />
+    <span id="tlLabel" class="live">LIVE</span>
+    <button id="tlLive">Latest</button>
+  </div>
 
   <div class="card" id="card" hidden>
     <button class="close" id="cardClose" aria-label="Close">×</button>
@@ -97,22 +146,7 @@
   <div class="toast" id="toast" hidden></div>
 
   <dialog id="settings">
-    <form method="dialog">
-      <h2>Power up</h2>
-      <label>Flight relay URL
-        <input id="relayInput" type="url" autocomplete="off" placeholder="https://gel-relay.you.workers.dev" />
-      </label>
-      <p class="hint">Flight feeds block direct browser access, so flights go through your own free Cloudflare Worker (<code>relay/worker.js</code>). Leave blank to use the site default.</p>
-      <p>Everything else runs without keys. A free <a href="https://cesium.com/ion/signup" target="_blank" rel="noopener">Cesium ion</a> token adds Google Photorealistic 3D cities and world terrain (personal, non-commercial use under ion's Community plan).</p>
-      <label>Cesium ion access token
-        <input id="ionToken" type="password" autocomplete="off" placeholder="eyJhbGciOi…" />
-      </label>
-      <p class="hint">Stored only in this browser (localStorage). In ion, give the token <code>assets:read</code> scope only and restrict its allowed URLs to your GitHub Pages address — anything in a browser is visible to that browser's user.</p>
-      <div class="dialog-actions">
-        <button value="clear" id="clearToken">Clear all</button>
-        <button value="save" id="saveToken" class="primary">Save &amp; reload</button>
-      </div>
-    </form>
+    <form method="dialog" id="settingsBody"></form>
   </dialog>
 
   <script type="module" src="./js/app.js"></script>

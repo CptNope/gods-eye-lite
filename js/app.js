@@ -3,20 +3,22 @@ import { FlightsLayer } from './layers/flights.js';
 import { SatellitesLayer } from './layers/satellites.js';
 import { QuakesLayer } from './layers/quakes.js';
 import { LaunchesLayer } from './layers/launches.js';
+import { RadarLayer, CloudsLayer, LightningLayer, WindLayer, CyclonesLayer, AlertsLayer } from './layers/weather.js';
+import { Timeline } from './timeline.js';
 import { Styles, STYLE_ORDER } from './styles.js';
+import { vault } from './vault.js';
+import { initKeysUI, keyFor } from './keys.js';
 import { toast, fmt, esc } from './util.js';
 
 const $ = (s) => document.querySelector(s);
-const TOKEN_KEY = 'gel:ionToken';
 const PREF_KEY = 'gel:prefs';
-const ionToken = (localStorage.getItem(TOKEN_KEY) || '').trim();
 const prefs = loadPrefs();
 
 if (typeof Cesium === 'undefined') {
   document.body.innerHTML = '<p style="padding:24px">Could not load CesiumJS from the CDN. Check your connection and reload.</p>';
   throw new Error('Cesium missing');
 }
-if (ionToken) Cesium.Ion.defaultAccessToken = ionToken;
+Cesium.Ion.defaultAccessToken = ''; // set from the vault once unlocked (see applyKeys)
 
 // ---------- Viewer ----------
 const viewer = new Cesium.Viewer('globe', {
@@ -24,7 +26,6 @@ const viewer = new Cesium.Viewer('globe', {
   animation: false, timeline: false, baseLayerPicker: false, geocoder: false, homeButton: false,
   sceneModePicker: false, navigationHelpButton: false, fullscreenButton: false,
   infoBox: false, selectionIndicator: false,
-  terrain: ionToken ? Cesium.Terrain.fromWorldTerrain() : undefined,
   msaaSamples: 2,
 });
 const scene = viewer.scene;
@@ -65,31 +66,69 @@ function setBasemap(name) {
 setBasemap(prefs.base || 'esri');
 $('#basemap').addEventListener('click', (e) => e.target.dataset.base && setBasemap(e.target.dataset.base));
 
-// ---------- Photorealistic 3D (optional, needs ion token) ----------
+// ---------- Photorealistic 3D + terrain (keys from the encrypted vault) ----------
 let photoreal = null;
-async function setPhotoreal(on) {
-  const status = $('#photorealStatus');
-  if (!ionToken) { status.textContent = 'needs token'; status.className = 'warn'; $('#photoreal').checked = false; if (on) openSettings(); return; }
-  prefs.photoreal = on; savePrefs();
-  if (!on) {
-    if (photoreal) photoreal.show = false;
-    scene.globe.show = true; status.textContent = 'off'; status.className = '';
+let photorealSource = '';
+function setPhotorealStatus(text, cls = '') { const s = $('#photorealStatus'); s.textContent = text; s.className = cls; }
+
+function dropPhotoreal() {
+  if (photoreal) scene.primitives.remove(photoreal); // remove() destroys it
+  photoreal = null; photorealSource = '';
+  scene.globe.show = true;
+}
+
+async function setPhotoreal(on, { remember = true } = {}) {
+  const google = keyFor('google'), ion = keyFor('ion');
+  if (!google && !ion) {
+    dropPhotoreal();
+    $('#photoreal').checked = false;
+    setPhotorealStatus(vault.exists() && !vault.isUnlocked() ? 'unlock keys' : 'needs key', 'warn');
+    if (on) keysUI.open();
     return;
   }
+  if (remember) { prefs.photoreal = on; savePrefs(); }
+  if (!on) { if (photoreal) photoreal.show = false; scene.globe.show = true; setPhotorealStatus('off'); return; }
+  const source = google ? 'google' : 'ion';
   try {
-    status.textContent = 'loading…'; status.className = 'warn';
-    if (!photoreal) photoreal = scene.primitives.add(await Cesium.createGooglePhotorealistic3DTileset());
+    setPhotorealStatus('loading…', 'warn');
+    if (photoreal && photorealSource !== source) dropPhotoreal();
+    if (!photoreal) {
+      photoreal = scene.primitives.add(await Cesium.createGooglePhotorealistic3DTileset(google || undefined));
+      photorealSource = source;
+    }
     photoreal.show = true;
     scene.globe.show = false;
-    status.textContent = 'on · ion'; status.className = 'ok';
+    $('#photoreal').checked = true;
+    setPhotorealStatus(`on · ${source === 'google' ? 'Google' : 'ion'}`, 'ok');
   } catch (err) {
     console.error(err);
-    status.textContent = 'token rejected'; status.className = 'err';
-    $('#photoreal').checked = false; scene.globe.show = true;
+    dropPhotoreal();
+    $('#photoreal').checked = false;
+    setPhotorealStatus('key rejected', 'err');
   }
 }
 $('#photoreal').addEventListener('change', (e) => setPhotoreal(e.target.checked));
-if (ionToken) { $('#photorealStatus').textContent = 'off'; $('#photorealStatus').className = ''; }
+
+// Re-apply whenever keys change (unlock, lock, edit).
+let appliedIon = null, appliedGoogle = null;
+function applyKeys() {
+  const ion = keyFor('ion'), google = keyFor('google');
+  if (ion !== appliedIon) {
+    appliedIon = ion;
+    Cesium.Ion.defaultAccessToken = ion || '';
+    if (ion) scene.setTerrain(Cesium.Terrain.fromWorldTerrain());
+    else scene.terrainProvider = new Cesium.EllipsoidTerrainProvider();
+  }
+  const keysChanged = google !== appliedGoogle;
+  appliedGoogle = google;
+  if (!ion && !google) setPhotoreal(false, { remember: false });
+  else if (prefs.photoreal) { if (keysChanged) dropPhotoreal(); setPhotoreal(true); }
+  else setPhotorealStatus('off');
+  const chip = $('#lockChip');
+  chip.hidden = !vault.exists();
+  chip.textContent = vault.isUnlocked() ? '🔓' : '🔒';
+  chip.title = vault.isUnlocked() ? 'Keys unlocked — click to manage or lock' : 'Keys locked — click to unlock';
+}
 
 // ---------- Camera helpers ----------
 function viewCenter() {
@@ -108,12 +147,19 @@ function flyToPos(p, range = 60000) {
 }
 
 // ---------- Layers ----------
+const timeline = new Timeline();
 const layers = {
   flights: new FlightsLayer(viewer, { mode: 'civil', getCenter: viewCenter }),
   military: new FlightsLayer(viewer, { mode: 'military' }),
   satellites: new SatellitesLayer(viewer),
   quakes: new QuakesLayer(viewer),
   launches: new LaunchesLayer(viewer, { onList: renderLaunches }),
+  radar: new RadarLayer(viewer, timeline),
+  clouds: new CloudsLayer(viewer, timeline),
+  lightning: new LightningLayer(viewer, timeline),
+  wind: new WindLayer(viewer),
+  cyclones: new CyclonesLayer(viewer),
+  alerts: new AlertsLayer(viewer),
 };
 const active = new Set();
 
@@ -131,6 +177,10 @@ document.querySelectorAll('[data-layer]').forEach((box) => box.addEventListener(
 $('#satGroup').value = prefs.satGroup || 'visual';
 layers.satellites.group = $('#satGroup').value;
 $('#satGroup').addEventListener('change', (e) => { prefs.satGroup = e.target.value; savePrefs(); layers.satellites.setGroup(e.target.value); });
+
+$('#radarSource').value = prefs.radarSource || 'global';
+layers.radar.source = $('#radarSource').value;
+$('#radarSource').addEventListener('change', (e) => { prefs.radarSource = e.target.value; savePrefs(); layers.radar.setSource(e.target.value); });
 
 // Civil flights follow the view: re-poll shortly after the camera settles somewhere new.
 let lastPollCenter = null;
@@ -169,7 +219,7 @@ function selectedRef(id) {
 function positionOfSelected() {
   if (!selected) return null;
   const L = layers[selected.layer];
-  return L.positionOf(selectedRef(selected));
+  return L.pos ? L.pos(selected) : L.positionOf(selectedRef(selected));
 }
 
 function select(id) {
@@ -182,7 +232,8 @@ function select(id) {
   $('#card').hidden = false;
   if (window.innerWidth < 640) $('#panel').classList.add('closed'); // card and panel share the screen on phones
   const p = positionOfSelected();
-  if (p) flyToPos(p, id.kind === 'satellite' ? 2.5e6 : id.kind === 'aircraft' ? 40000 : 400000);
+  const range = { satellite: 2.5e6, aircraft: 40000, storm: 1.8e6, alert: 600000 }[id.kind] || 400000;
+  if (p) flyToPos(p, range);
   if (canFollow) $('#followBtn').addEventListener('click', () => (following ? stopFollow() : startFollow()));
 }
 
@@ -221,7 +272,8 @@ function stopFollow() {
 const handler = new Cesium.ScreenSpaceEventHandler(scene.canvas);
 handler.setInputAction((click) => {
   const picked = scene.pick(click.position);
-  const id = picked?.id ?? picked?.primitive?.id;
+  let id = picked?.id ?? picked?.primitive?.id;
+  if (id instanceof Cesium.Entity) id = id._gel; // weather entities carry their selection info here
   if (id && id.kind && layers[id.layer]) select(id);
 }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
 
@@ -285,22 +337,17 @@ function applyHash() {
   return { style: q.get('s'), layers: q.get('l')?.split(',').filter(Boolean) };
 }
 
-// ---------- Settings (ion token) ----------
-function openSettings() {
-  $('#ionToken').value = ionToken;
-  $('#relayInput').value = localStorage.getItem('gel:relay') || '';
-  $('#settings').showModal();
-}
-$('#settingsBtn').addEventListener('click', openSettings);
-$('#saveToken').addEventListener('click', () => {
-  const v = $('#ionToken').value.trim();
-  if (v) localStorage.setItem(TOKEN_KEY, v); else localStorage.removeItem(TOKEN_KEY);
-  const relay = $('#relayInput').value.trim();
-  if (relay && !/^https:\/\//.test(relay)) { toast('Relay URL must start with https://'); return; }
-  if (relay) localStorage.setItem('gel:relay', relay); else localStorage.removeItem('gel:relay');
-  location.reload();
+// ---------- Power up: encrypted key vault ----------
+const keysUI = initKeysUI({
+  relayGet: () => localStorage.getItem('gel:relay') || '',
+  relaySet: (v) => {
+    if (v) localStorage.setItem('gel:relay', v.replace(/\/+$/, '')); else localStorage.removeItem('gel:relay');
+    for (const id of ['flights', 'military']) if (active.has(id)) layers[id].poll();
+  },
 });
-$('#clearToken').addEventListener('click', () => { localStorage.removeItem(TOKEN_KEY); localStorage.removeItem('gel:relay'); prefs.photoreal = false; savePrefs(); location.reload(); });
+$('#settingsBtn').addEventListener('click', () => keysUI.open());
+$('#lockChip').addEventListener('click', () => keysUI.open());
+vault.onChange(applyKeys);
 
 // ---------- PWA: service worker + install ----------
 if ('serviceWorker' in navigator) {
@@ -323,7 +370,8 @@ styles.set(fromHash.style || prefs.style || 'normal');
 const startLayers = fromHash.layers || prefs.layers || ['flights', 'satellites', 'quakes'];
 for (const id of startLayers) setLayer(id, true);
 for (const id of Object.keys(layers)) if (!startLayers.includes(id)) setLayer(id, false);
-if (prefs.photoreal && ionToken) { $('#photoreal').checked = true; setPhotoreal(true); }
+applyKeys();
+if (vault.exists() && !vault.isUnlocked()) setTimeout(() => keysUI.open(), 800); // offer unlock; skipping is fine
 
 function loadPrefs() { try { return JSON.parse(localStorage.getItem(PREF_KEY)) || {}; } catch { return {}; } }
 function savePrefs() { try { localStorage.setItem(PREF_KEY, JSON.stringify(prefs)); } catch { /* ignore */ } }

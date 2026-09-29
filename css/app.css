@@ -97,3 +97,42 @@ code { color: var(--accent); }
   .panel { width: calc(100vw - 24px); bottom: auto; max-height: 62vh; }
   .card { left: 12px; right: 12px; width: auto; }
 }
+
+/* ---------- Lock chip (vault state) ---------- */
+.fab.lock { top: calc(env(safe-area-inset-top) + 44px); left: auto; right: 12px; }
+
+/* ---------- Weather timeline ---------- */
+.timeline {
+  position: fixed; z-index: 19; left: 50%; transform: translateX(-50%); bottom: 12px;
+  width: min(620px, calc(100vw - 24px)); display: flex; align-items: center; gap: 6px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 6px 8px;
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+}
+.timeline button { padding: 4px 8px; }
+.timeline input[type=range] { flex: 1; accent-color: var(--accent); min-width: 60px; }
+#tlLabel { min-width: 112px; text-align: center; font-size: 12px; color: var(--fg); }
+#tlLabel.live { color: var(--err); font-weight: 700; letter-spacing: 0.1em; }
+body.tl-on .card { bottom: 64px; }
+body.tl-on .cesium-viewer-bottom { bottom: 58px; }
+
+/* ---------- Power up dialog ---------- */
+dialog { max-height: calc(100vh - 32px); overflow-y: auto; max-width: 520px; }
+dialog .warn { color: var(--warn); }
+dialog .err { color: var(--err); }
+dialog small { color: var(--dim); font-weight: normal; }
+.prov { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; margin: 8px 0; }
+.prov.next { opacity: 0.75; }
+.prov-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.prov input { width: 100%; font: inherit; color: var(--fg); background: #0b1512; border: 1px solid var(--line); border-radius: 6px; padding: 7px; margin-top: 4px; }
+.prov .hint { margin: 4px 0; }
+.tag { font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; color: var(--dim); }
+.tag.active { color: var(--accent); border-color: var(--accent); }
+.tag.set { color: #002314; background: var(--accent); border-color: var(--accent); }
+.tag.route { color: var(--fg); }
+button.danger { color: var(--err); border-color: rgba(255,107,107,0.4); margin-right: auto; }
+
+@media (max-width: 640px) {
+  #tlLabel { min-width: 84px; font-size: 11px; }
+  .timeline #tlBack, .timeline #tlFwd { display: none; }
+}
+.timeline[hidden], .fab[hidden] { display: none; }

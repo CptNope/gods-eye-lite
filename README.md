@@ -12,8 +12,13 @@ A static, installable PWA that puts the **keyless** feeds from
 | 🛰️ Satellites (SGP4 in-browser, orbit path on click) | CelesTrak TLEs + satellite.js | none |
 | 🌍 Earthquakes, last 24h | USGS | none |
 | 🚀 Upcoming launches + countdown list | Launch Library 2 (The Space Devs) | none |
+| 🌧️ Rain radar with 3-hour playback | RainViewer (global) or NOAA nowCOAST (US high-res) | none |
+| ☁️ Satellite clouds (IR) + ⚡ lightning density | NOAA nowCOAST | none |
+| 🌬️ Animated 10 m wind | Open-Meteo | none |
+| 🌀 Tropical cyclone cones, tracks, positions | NOAA NHC / CPHC | none |
+| ⚠️ Active warnings & advisories (US) | NWS api.weather.gov | none |
 | 🗺️ Basemaps: Esri satellite, NASA GIBS "yesterday", CARTO streets/dark | Esri / NASA / CARTO | none |
-| 🏙️ Google Photorealistic 3D + world terrain | Cesium ion | free token (optional) |
+| 🏙️ Google Photorealistic 3D + world terrain | Cesium ion, or Google Map Tiles API direct | your key (optional) |
 
 Plus: CRT / NVG / FLIR / Noir sensor shaders (keys `1`–`5`), click-to-inspect cards, follow-cam for aircraft and satellites, share links that restore camera + layers + sensor, offline app shell, and a tile cache so revisited areas load offline.
 
@@ -41,13 +46,25 @@ Tested in a real browser on 2026-09-29: adsb.lol, OpenSky, airplanes.live, adsb.
 
 Free tier = 100,000 requests/day; with the built-in caching one active viewer uses roughly 400 requests/hour.
 
-## Optional: photorealistic 3D
+## API keys: bring your own, encrypted on your device
 
-1. Sign up at [cesium.com/ion](https://cesium.com/ion/signup) (Community plan = personal, non-commercial).
-2. **Access Tokens → Create token** with only `assets:read`, and under *Allowed URLs* add your Pages URL.
-3. In the app: **⚡ Power up** → paste token → *Save & reload* → tick **Photorealistic 3D**.
+Open **⚡ Power up (API keys)**. The first time, you create a **key vault** with a passphrase; after that the app asks you to unlock it once per session (or you skip and run keyless). The 🔒/🔓 chip top-right shows the state.
 
-The token lives only in that browser's `localStorage`. Because it's used from the browser, restricting its allowed URLs at ion is what protects it.
+**How keys are protected**
+- **Encrypted at rest.** AES-256-GCM with a key derived from your passphrase (PBKDF2-SHA-256, 600,000 iterations, random salt; fresh nonce on every save). `localStorage` only ever holds ciphertext, so a copied profile, backup or stolen disk yields nothing usable. Code: `js/vault.js`.
+- **Memory only when unlocked.** The derived key is a non-extractable `CryptoKey`; the passphrase is never stored. Lock, or closing the tab, wipes the plaintext keys.
+- **Can't be sent anywhere unexpected.** A Content-Security-Policy in `index.html` only lets the page talk to the listed providers (and `*.workers.dev` for your relay), and only load code from itself and jsDelivr.
+- **Never on anyone else's machine.** Each visitor's keys stay in their own browser. Relay-routed keys (FIRMS, AISStream — coming) will be forwarded per request by *your* Worker and never stored there.
+
+**The honest limit:** while unlocked, a script running *on this page* could use your keys — that's true of any browser app. The CSP narrows that sharply; the backstop is restricting each key at its provider:
+
+| Key | Restrict it like this |
+|---|---|
+| Cesium ion | Scope `assets:read` only; Allowed URLs = your Pages URL |
+| Google Map Tiles | API restriction = Map Tiles API; HTTP referrer = your site; budget alert |
+| TomTom / OpenAI (coming) | Domain restriction / project key with a monthly cap |
+
+No recovery: if you forget the passphrase, choose *Forget vault* and re-enter keys. Upgrading from the first version moves any unencrypted ion token into the vault and deletes the plaintext copy.
 
 ## What didn't come over from the full app (and why)
 
@@ -59,7 +76,8 @@ The original is a Vite app with a Node server that brokers secrets. GitHub Pages
 ## Notes & limits
 
 - Feed quotas are the providers'. adsb.lol is polled every 15 s (civil) / 20 s (military); CelesTrak TLEs cache 2 h; Launch Library 2 caches 1 h (anonymous limit is ~15 requests/hour).
-- Flights show **needs relay** until a relay URL is set.
+- Flights show **needs relay** until a relay URL is set. The relay must be on `*.workers.dev` (or add your custom domain to `connect-src` in the CSP).
+- Weather imagery draws on the globe surface, so it's hidden while Photorealistic 3D is on.
 - If a layer shows **blocked/offline**, that provider refused the browser request (CORS change, rate limit, or ad-blocker). Others keep working independently.
 - Exploratory visualization only — data can be delayed or wrong. Don't use it for navigation or safety decisions.
 
