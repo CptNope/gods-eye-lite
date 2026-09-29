@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>God's Eye Lite</title>
+  <meta name="description" content="Live open-source spatial intelligence on a 3D globe — flights, satellites, earthquakes and launches from free public feeds." />
+  <meta name="theme-color" content="#05080a" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" href="./icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cesium@1.121.0/Build/Cesium/Widgets/widgets.css" />
+  <link rel="stylesheet" href="./css/app.css" />
+  <script>window.CESIUM_BASE_URL = "https://cdn.jsdelivr.net/npm/cesium@1.121.0/Build/Cesium/";</script>
+  <script src="https://cdn.jsdelivr.net/npm/cesium@1.121.0/Build/Cesium/Cesium.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/satellite.js@5.0.0/dist/satellite.min.js"></script>
+</head>
+<body>
+  <div id="globe"></div>
+
+  <header class="hud-top">
+    <div class="brand"><span class="dot"></span>GOD'S EYE <b>LITE</b></div>
+    <div class="clock" id="clock">--:--:-- UTC</div>
+    <div class="coords" id="coords">—</div>
+  </header>
+
+  <button class="fab" id="panelToggle" aria-label="Toggle panel">☰</button>
+
+  <aside class="panel" id="panel">
+    <section>
+      <h2>Data layers</h2>
+      <label class="row"><input type="checkbox" data-layer="flights" checked /> <span>✈️ Live flights</span><em data-status="flights"></em></label>
+      <label class="row"><input type="checkbox" data-layer="military" /> <span>🎖️ Military flights</span><em data-status="military"></em></label>
+      <label class="row"><input type="checkbox" data-layer="satellites" checked /> <span>🛰️ Satellites</span><em data-status="satellites"></em></label>
+      <div class="sub">
+        <select id="satGroup" aria-label="Satellite group">
+          <option value="stations">Space stations</option>
+          <option value="visual" selected>Brightest (~150)</option>
+          <option value="gps-ops">GPS</option>
+          <option value="weather">Weather</option>
+          <option value="science">Science</option>
+          <option value="starlink">Starlink (heavy)</option>
+        </select>
+      </div>
+      <label class="row"><input type="checkbox" data-layer="quakes" checked /> <span>🌍 Earthquakes (24h)</span><em data-status="quakes"></em></label>
+      <label class="row"><input type="checkbox" data-layer="launches" /> <span>🚀 Upcoming launches</span><em data-status="launches"></em></label>
+      <p class="hint">Civil flights load within 250 nm of the point you're looking at. Zoom into a region.</p>
+    </section>
+
+    <section>
+      <h2>Basemap</h2>
+      <div class="seg" id="basemap">
+        <button data-base="esri" class="on">Satellite</button>
+        <button data-base="gibs">Today (NASA)</button>
+        <button data-base="osm">Streets</button>
+        <button data-base="dark">Dark</button>
+      </div>
+      <label class="row"><input type="checkbox" id="photoreal" /> <span>Photorealistic 3D</span><em id="photorealStatus">needs token</em></label>
+    </section>
+
+    <section>
+      <h2>Sensor</h2>
+      <div class="seg" id="styles">
+        <button data-style="normal" class="on">Normal</button>
+        <button data-style="crt">CRT</button>
+        <button data-style="nvg">NVG</button>
+        <button data-style="flir">FLIR</button>
+        <button data-style="noir">Noir</button>
+      </div>
+      <p class="hint">Keys 1–5 switch sensors · H toggles HUD · Esc clears selection</p>
+    </section>
+
+    <section id="launchList" hidden>
+      <h2>Next launches</h2>
+      <ol id="launches"></ol>
+    </section>
+
+    <section class="actions">
+      <button id="shareBtn">🔗 Copy share link</button>
+      <button id="settingsBtn">⚡ Power up</button>
+      <button id="installBtn" hidden>⬇ Install app</button>
+    </section>
+
+    <footer class="credits">
+      Inspired by <a href="https://github.com/bilawalsidhu/gods-eye-view" target="_blank" rel="noopener">God's Eye View</a> (MIT).
+      Data: adsb.lol, OpenSky, CelesTrak, USGS, The Space Devs, Esri, NASA GIBS, OSM. Exploratory only — not for navigation or safety decisions.
+    </footer>
+  </aside>
+
+  <div class="card" id="card" hidden>
+    <button class="close" id="cardClose" aria-label="Close">×</button>
+    <div id="cardBody"></div>
+  </div>
+
+  <div class="toast" id="toast" hidden></div>
+
+  <dialog id="settings">
+    <form method="dialog">
+      <h2>Power up</h2>
+      <label>Flight relay URL
+        <input id="relayInput" type="url" autocomplete="off" placeholder="https://gel-relay.you.workers.dev" />
+      </label>
+      <p class="hint">Flight feeds block direct browser access, so flights go through your own free Cloudflare Worker (<code>relay/worker.js</code>). Leave blank to use the site default.</p>
+      <p>Everything else runs without keys. A free <a href="https://cesium.com/ion/signup" target="_blank" rel="noopener">Cesium ion</a> token adds Google Photorealistic 3D cities and world terrain (personal, non-commercial use under ion's Community plan).</p>
+      <label>Cesium ion access token
+        <input id="ionToken" type="password" autocomplete="off" placeholder="eyJhbGciOi…" />
+      </label>
+      <p class="hint">Stored only in this browser (localStorage). In ion, give the token <code>assets:read</code> scope only and restrict its allowed URLs to your GitHub Pages address — anything in a browser is visible to that browser's user.</p>
+      <div class="dialog-actions">
+        <button value="clear" id="clearToken">Clear all</button>
+        <button value="save" id="saveToken" class="primary">Save &amp; reload</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script type="module" src="./js/app.js"></script>
+</body>
+</html>
