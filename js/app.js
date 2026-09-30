@@ -6,6 +6,7 @@ import { LaunchesLayer } from './layers/launches.js';
 import { RadarLayer, CloudsLayer, LightningLayer, WindLayer, CyclonesLayer, AlertsLayer } from './layers/weather.js';
 import { Timeline } from './timeline.js';
 import { CctvLayer } from './layers/cctv.js';
+import { initSearch } from './search.js';
 import { Styles, STYLE_ORDER } from './styles.js';
 import { vault } from './vault.js';
 import { initKeysUI, keyFor } from './keys.js';
@@ -348,6 +349,9 @@ function applyHash() {
   }
   return { style: q.get('s'), layers: q.get('l')?.split(',').filter(Boolean) };
 }
+
+// ---------- Place search + device location ----------
+const search = initSearch({ viewer, getCenter: viewCenter });
 
 // ---------- Power up: encrypted key vault ----------
 const keysUI = initKeysUI({

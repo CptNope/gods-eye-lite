@@ -4,11 +4,11 @@
 // - CDN libraries (Cesium, satellite.js): stale-while-revalidate.
 // - Map tiles: cache-first with a size cap so revisited areas load offline.
 // - Live data APIs: network-only (the app itself keeps stale copies where useful).
-const VERSION = 'gel-v7';
+const VERSION = 'gel-v8';
 const SHELL = [
   './', './index.html', './css/app.css', './manifest.webmanifest',
   './js/boot.js', './js/app.js', './js/config.js', './js/util.js', './js/styles.js',
-  './js/vault.js', './js/keys.js', './js/timeline.js',
+  './js/vault.js', './js/keys.js', './js/timeline.js', './js/search.js',
   './js/layers/flights.js', './js/layers/satellites.js', './js/layers/quakes.js', './js/layers/launches.js',
   './js/layers/weather.js', './js/layers/cctv.js',
   './icons/icon-192.png', './icons/icon-512.png',

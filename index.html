@@ -14,7 +14,7 @@
     worker-src 'self' blob: https://cdn.jsdelivr.net;
     style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net;
     img-src 'self' data: blob: https://cdn.jsdelivr.net https://server.arcgisonline.com https://gibs.earthdata.nasa.gov https://*.basemaps.cartocdn.com https://tilecache.rainviewer.com https://nowcoast.noaa.gov https://*.cesium.com https://tile.googleapis.com https://cctv.austinmobility.io https://cwwp2.dot.ca.gov https://s3-eu-west-1.amazonaws.com https://511on.ca https://weathercam.digitraffic.fi https://www.drivebc.ca https://ristmikud.tallinn.ee https://tarktee.transpordiamet.ee https://webcams.transport.nsw.gov.au https://trafficcam.calgary.ca https://webcam.warendorf.de;
-    connect-src 'self' https://cdn.jsdelivr.net https://celestrak.org https://earthquake.usgs.gov https://ll.thespacedevs.com https://server.arcgisonline.com https://gibs.earthdata.nasa.gov https://*.basemaps.cartocdn.com https://api.rainviewer.com https://tilecache.rainviewer.com https://api.open-meteo.com https://nowcoast.noaa.gov https://mapservices.weather.noaa.gov https://api.weather.gov https://*.cesium.com https://tile.googleapis.com https://*.workers.dev;
+    connect-src 'self' https://cdn.jsdelivr.net https://celestrak.org https://earthquake.usgs.gov https://ll.thespacedevs.com https://server.arcgisonline.com https://gibs.earthdata.nasa.gov https://*.basemaps.cartocdn.com https://api.rainviewer.com https://tilecache.rainviewer.com https://api.open-meteo.com https://nowcoast.noaa.gov https://mapservices.weather.noaa.gov https://api.weather.gov https://photon.komoot.io https://nominatim.openstreetmap.org https://*.cesium.com https://tile.googleapis.com https://*.workers.dev;
     font-src 'self' data: https://cdn.jsdelivr.net;
     manifest-src 'self';
     media-src 'none';
@@ -48,6 +48,14 @@
   </header>
 
   <button class="fab" id="panelToggle" aria-label="Toggle panel">☰</button>
+
+  <div class="search" id="searchBox" role="search">
+    <input id="searchInput" type="search" placeholder="Search address or place…  ( / )" autocomplete="off" spellcheck="false"
+      role="combobox" aria-autocomplete="list" aria-controls="searchList" aria-expanded="false" aria-label="Search for an address or place" />
+    <button id="searchClear" class="icon" hidden aria-label="Clear search">×</button>
+    <button id="locateBtn" class="icon" title="Show my location" aria-label="Show my location">📍</button>
+    <ul id="searchList" role="listbox" hidden></ul>
+  </div>
   <button class="fab lock" id="lockChip" hidden aria-label="Key vault"></button>
 
   <aside class="panel" id="panel">
@@ -132,7 +140,7 @@
     <footer class="credits">
       Inspired by <a href="https://github.com/bilawalsidhu/gods-eye-view" target="_blank" rel="noopener">God's Eye View</a> (MIT).
       Cameras: TfL, Caltrans, Fintraffic, DriveBC, City of Tallinn, Austin TPW, Live Traffic NSW, City of Calgary (catalog via God's Eye View loaders). Data: adsb.lol, OpenSky, CelesTrak, USGS, The Space Devs, NOAA (nowCOAST, NHC, NWS), RainViewer, Open-Meteo, Esri, NASA GIBS, OSM/CARTO.
-      Exploratory only — not for navigation or safety decisions.
+      Search © OpenStreetMap contributors via Photon (komoot) and Nominatim. Your device location stays on your device. Exploratory only — not for navigation or safety decisions.
     </footer>
   </aside>
 

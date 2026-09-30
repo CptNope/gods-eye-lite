@@ -13,6 +13,7 @@ A static, installable PWA that puts the **keyless** feeds from
 | 🌍 Earthquakes, last 24h | USGS | none |
 | 🚀 Upcoming launches + countdown list | Launch Library 2 (The Space Devs) | none |
 | 📷 ~2,400 public traffic cameras with live stills: London, California, Finland, British Columbia, Tallinn, Austin, Sydney, Calgary | Catalog built daily on GitHub Actions with God's Eye View's MIT CCTV loaders; images load straight from each operator | none |
+| 🔎 Address & place search with suggestions, plus 📍 your device location | Photon (komoot) type-ahead, Nominatim on Enter, both OpenStreetMap; browser Geolocation API | none |
 | 🌧️ Rain radar with 3-hour playback | RainViewer (global) or NOAA nowCOAST (US high-res) | none |
 | ☁️ Satellite clouds (IR) + ⚡ lightning density | NOAA nowCOAST | none |
 | 🌬️ Animated 10 m wind | Open-Meteo | none |

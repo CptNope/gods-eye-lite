@@ -140,3 +140,33 @@ button.danger { color: var(--err); border-color: rgba(255,107,107,0.4); margin-r
 /* ---------- Cameras ---------- */
 button.wide { width: 100%; margin: 4px 0 2px; }
 .cam-img { display: block; width: 100%; max-height: 240px; object-fit: contain; background: #000; border: 1px solid var(--line); border-radius: 6px; margin: 4px 0 6px; }
+
+/* ---------- Search + locate ---------- */
+.search {
+  position: fixed; z-index: 22; top: calc(env(safe-area-inset-top) + 44px); left: 50%; transform: translateX(-50%);
+  width: min(460px, calc(100vw - 128px)); display: flex; align-items: center; gap: 2px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 3px 4px 3px 10px;
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+}
+.search:focus-within { border-color: var(--accent); }
+.search input { flex: 1; min-width: 0; font: inherit; color: var(--fg); background: transparent; border: 0; outline: 0; padding: 7px 0; }
+.search input::-webkit-search-cancel-button { display: none; }
+.search button.icon { border: 0; background: transparent; padding: 6px 8px; font-size: 15px; line-height: 1; }
+.search button.icon:hover { background: rgba(255,255,255,0.06); }
+#locateBtn.busy { animation: blink 1s infinite; }
+#locateBtn.on { background: rgba(77,163,255,0.22); border-radius: 6px; }
+.search.busy { border-color: var(--warn); }
+#searchList {
+  position: absolute; top: calc(100% + 4px); left: 0; right: 0; margin: 0; padding: 4px; list-style: none;
+  background: #08110e; border: 1px solid var(--line); border-radius: 10px; max-height: 50vh; overflow-y: auto;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+}
+#searchList[hidden] { display: none; }
+#searchList li { padding: 7px 9px; border-radius: 6px; cursor: pointer; }
+#searchList li b { display: block; font-weight: 600; color: #fff; }
+#searchList li small { display: block; color: var(--dim); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#searchList li.on, #searchList li:hover { background: rgba(93,255,176,0.12); }
+@media (max-width: 640px) {
+  .search { width: calc(100vw - 120px); }
+  .panel { top: calc(env(safe-area-inset-top) + 92px); }
+}
