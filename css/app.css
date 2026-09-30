@@ -196,3 +196,19 @@ button.wide { width: 100%; margin: 4px 0 2px; }
 .progress[hidden] { display: none; }
 #offBar { height: 100%; width: 0; background: var(--accent); transition: width .2s; }
 .card { max-height: calc(100vh - 140px); overflow-y: auto; }
+
+/* ---------- Power up: key how-tos and tests ---------- */
+.prov details.howto { margin: 4px 0 6px; font-size: 12px; }
+.prov details.howto summary { cursor: pointer; color: var(--accent); }
+.prov details.howto ol { margin: 6px 0 4px; padding-left: 20px; line-height: 1.5; }
+.prov details.howto li { margin-bottom: 3px; }
+.key-row { display: flex; gap: 6px; align-items: center; }
+.key-row input { flex: 1; margin-top: 0 !important; }
+.key-row button { flex: 0 0 auto; padding: 7px 10px; }
+.test-msg { margin: 5px 0 0; }
+.test-msg.ok { color: var(--accent); }
+.test-msg.err { color: var(--err); }
+details.coming { margin: 10px 0; border-top: 1px solid var(--line); padding-top: 8px; }
+details.coming > summary { cursor: pointer; color: var(--dim); font-size: 12px; }
+/* Windy images: never upscaled (terms), capped to the card width */
+.wc-img { display: block; width: auto; max-width: 100%; height: auto; margin: 4px 0 6px; border: 1px solid var(--line); border-radius: 6px; }

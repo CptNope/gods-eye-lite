@@ -183,22 +183,58 @@ To revive them: run the same relay logic on an ordinary server (e.g. a small dro
 
 ## API keys: bring your own, encrypted on your device
 
-Open **⚡ Power up (API keys)**. The first time, you create a **key vault** with a passphrase; after that the app asks you to unlock it once per session (or you skip and run keyless). The 🔒/🔓 chip top-right shows the state.
+Everything works without keys. Keys add extra layers, and each visitor adds **their own**; nothing is shared through the site.
 
-**How keys are protected**
+### Adding a key in the app
+
+1. Open the panel (☰) → **⚡ Power up (API keys)**.
+2. The first time, create a **key vault** with a passphrase (10+ characters). After that, the app asks you to unlock it once per session, or you can skip and stay keyless.
+3. Each key has a **How to get this key** guide. Paste your key, press **Test** to check it with the provider, then **Save**.
+4. The 🔒/🔓 chip at the top right shows whether your keys are unlocked. **Lock** clears them from memory.
+
+### Which keys, and how to get them
+
+| Key | Unlocks | Cost | Where |
+|---|---|---|---|
+| **Windy Webcams** | 📹 Webcams around the map view | Free | [api.windy.com/keys](https://api.windy.com/keys) |
+| **Cesium ion** | 🏙️ Photorealistic 3D cities + world terrain | Free (personal, non-commercial) | [ion.cesium.com/tokens](https://ion.cesium.com/tokens) |
+| **Google Map Tiles** | Same 3D tiles direct from Google | Metered, with a monthly free allowance | [Google Cloud Console](https://console.cloud.google.com/google/maps-apis/credentials) |
+| TomTom, NASA FIRMS, AISStream, OpenAI | Traffic flow, fires, ships, voice (not built yet) | Free / metered | Links in the app under *Coming soon* |
+
+#### Windy Webcams (free)
+
+1. Go to [api.windy.com/keys](https://api.windy.com/keys) and sign in, or create a free Windy account.
+2. Create a new API key and choose the **Webcams API** on the **Free** plan.
+3. Copy the key into **⚡ Power up → Windy Webcams**, press **Test**, then **Save**.
+4. Turn on **📹 Webcams** under *Cameras* and zoom into a town.
+
+Free plan limits ([pricing](https://api.windy.com/webcams), [terms](https://api.windy.com/webcams/terms)): smaller images, and image links expire after roughly 10–15 minutes. The app refreshes the list every 9 minutes and an open webcam every 5. The terms require every image to link to its Windy page, images not to be enlarged, and the line "Webcams provided by Windy.com — add a webcam"; the webcam card does all three. If Windy blocks the browser, the app retries through the relay Worker, which forwards your key for that one request and never stores it.
+
+#### Cesium ion (free for personal use)
+
+1. Sign up at [ion.cesium.com](https://ion.cesium.com/signup) on the free Community plan.
+2. **Access Tokens → Create token**, with only the `assets:read` scope.
+3. Under **Allowed URLs**, add `https://cptnope.github.io` (or your own copy's address).
+4. Paste it into **⚡ Power up → Cesium ion**, **Test**, **Save**, then tick **Photorealistic 3D** under *Basemap*.
+
+#### Google Map Tiles API (metered)
+
+Only needed for commercial use or if you already have a Google Cloud project; otherwise use Cesium ion.
+
+1. In [Google Cloud Console](https://console.cloud.google.com/), create a project and enable billing (required even within the free allowance).
+2. Enable the **Map Tiles API**.
+3. **Credentials → Create credentials → API key.** Restrict it to the Map Tiles API and to `https://cptnope.github.io/*` as a website.
+4. Set a budget alert, then paste the key into **⚡ Power up**, **Test** and **Save**.
+
+### How keys are protected
+
 - **Encrypted at rest.** AES-256-GCM with a key derived from your passphrase (PBKDF2-SHA-256, 600,000 iterations, random salt; fresh nonce on every save). `localStorage` only ever holds ciphertext, so a copied profile, backup or stolen disk yields nothing usable. Code: `js/vault.js`.
 - **Memory only when unlocked.** The derived key is a non-extractable `CryptoKey`; the passphrase is never stored. Lock, or closing the tab, wipes the plaintext keys.
 - **Can't be sent anywhere unexpected.** A Content-Security-Policy in `index.html` only lets the page talk to the listed providers (and `*.workers.dev` for the relay), and only load code from itself and jsDelivr.
 - **Never stored on anyone else's machine.** Each visitor's keys stay in their own browser. A key sent through the relay is forwarded for that request only.
+- **Tests go straight to the provider.** The **Test** button calls the provider's own API with the key you pasted, the same way the layer will.
 
-**The honest limit:** while unlocked, a script running *on this page* could use your keys — that's true of any browser app. The CSP narrows that sharply; the backstop is restricting each key at its provider:
-
-| Key | Restrict it like this |
-|---|---|
-| Cesium ion | Scope `assets:read` only; Allowed URLs = your Pages URL |
-| Google Map Tiles | API restriction = Map Tiles API; HTTP referrer = your site; budget alert |
-| Windy Webcams | Free plan key; nothing billable on it |
-| TomTom / OpenAI (coming) | Domain restriction / project key with a monthly cap |
+**The honest limit:** while unlocked, a script running *on this page* could use your keys — that's true of any browser app. The CSP narrows that sharply; the backstop is restricting each key at its provider (allowed URLs for Cesium ion, website + API restrictions and a budget alert for Google). The Windy free key has nothing billable on it.
 
 No recovery: if you forget the passphrase, choose *Forget vault* and re-enter keys.
 

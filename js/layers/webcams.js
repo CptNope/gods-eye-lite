@@ -1,6 +1,6 @@
 // Public webcams from Windy.com (scenic, weather and town cams worldwide) — uses the VIEWER'S OWN free
 // Windy Webcams API key from the encrypted key vault. Image links on the free tier expire after
-// 10 minutes, so the list is re-fetched every 9 minutes and an open card refreshes its own image.
+// 10–15 minutes, so the list is re-fetched every 9 minutes and an open card refreshes its own image.
 import { setStatus, describeError, esc } from '../util.js';
 import { relayUrl } from '../config.js';
 
@@ -123,16 +123,19 @@ export class WebcamsLayer {
         if (fresh) { el.src = fresh; this.cams.set(sel.id, { ...w, ...j }); }
       } catch { /* keep the last frame */ }
     }, 5 * 60e3);
+    // Windy free-plan terms: every image links to its Windy page/player, is never shown larger than
+    // delivered, and the courtesy line "Webcams provided by Windy.com — add a webcam" is displayed.
+    const detail = w.urls?.detail || 'https://www.windy.com/webcams';
     return `
       <h3>📹 ${esc(w.title || 'Webcam')}</h3>
-      ${img ? `<img id="wcImg" class="cam-img" src="${esc(img)}" alt="Latest image from ${esc(w.title || 'webcam')}" referrerpolicy="no-referrer" />` : '<p class="hint">No current image.</p>'}
+      ${img ? `<a href="${esc(detail)}" target="_blank" rel="noopener" title="Open live view and timelapse on Windy"><img id="wcImg" class="wc-img" src="${esc(img)}" alt="Latest image from ${esc(w.title || 'webcam')}" referrerpolicy="no-referrer" /></a>` : '<p class="hint">No current image.</p>'}
       <dl>
         ${place ? `<dt>Place</dt><dd>${esc(place)}</dd>` : ''}
         ${updated ? `<dt>Image from</dt><dd>${esc(updated)}</dd>` : ''}
         ${w.status && w.status !== 'active' ? `<dt>Status</dt><dd>${esc(w.status)}</dd>` : ''}
       </dl>
       <div class="links">${w.urls?.detail ? `<a href="${esc(w.urls.detail)}" target="_blank" rel="noopener">Live view &amp; timelapse on Windy ↗</a>` : ''}</div>
-      <p class="hint">Webcams provided by <a href="https://www.windy.com/" target="_blank" rel="noopener">windy.com</a></p>`;
+      <p class="hint">Webcams provided by <a href="https://www.windy.com/" target="_blank" rel="noopener">Windy.com</a> — <a href="https://www.windy.com/webcams/add" target="_blank" rel="noopener">add a webcam</a></p>`;
   }
 
   onDeselect() { clearInterval(this.cardTimer); }
