@@ -2,6 +2,7 @@
 // Windy Webcams API key from the encrypted key vault. Image links on the free tier expire after
 // 10 minutes, so the list is re-fetched every 9 minutes and an open card refreshes its own image.
 import { setStatus, describeError, esc } from '../util.js';
+import { relayUrl } from '../config.js';
 
 const API = 'https://api.windy.com/webcams/api/v3/webcams';
 
@@ -33,9 +34,27 @@ export class WebcamsLayer {
   // Called when the key vault changes (unlock / key added).
   keysChanged() { if (this.bbs.show) this.load(true); }
 
+  // Try Windy directly; if the browser is blocked (CORS), use the relay Worker, which forwards the
+  // key for that single request only. The working route is remembered for this browser.
   async request(url) {
     const key = this.getKey();
-    const res = await fetch(url, { headers: { 'x-windy-api-key': key, Accept: 'application/json' }, signal: AbortSignal.timeout(15000) });
+    const mode = localStorage.getItem('gel:windyRoute') || 'direct';
+    const relay = relayUrl();
+    const viaRelay = (u) => u.replace(API, `${relay}/windy/webcams`);
+    let res;
+    if (mode === 'direct' || !relay) {
+      try {
+        res = await fetch(url, { headers: { 'x-windy-api-key': key, Accept: 'application/json' }, signal: AbortSignal.timeout(15000) });
+      } catch (err) {
+        if (!(err instanceof TypeError) || !relay) throw err;
+        res = null;
+      }
+    }
+    if (!res) {
+      res = await fetch(viaRelay(url), { headers: { 'X-Windy-Api-Key': key }, signal: AbortSignal.timeout(15000) });
+      if (res.ok) localStorage.setItem('gel:windyRoute', 'relay');
+    }
+    this.route = res.headers.get('x-upstream') === 'windy' ? 'relay' : 'direct';
     if (res.status === 401 || res.status === 403) throw Object.assign(new Error('key rejected'), { code: 'key' });
     if (res.status === 429) throw Object.assign(new Error('rate limited — try later'), { code: 'rate' });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -58,10 +77,10 @@ export class WebcamsLayer {
       setStatus(this.id, 'loading…', 'warn');
       const j = await this.request(url);
       this.render(j.webcams || []);
-      setStatus(this.id, `${this.cams.size} within ${radius} km`, 'ok');
+      setStatus(this.id, `${this.cams.size} within ${radius} km${this.route === 'relay' ? ' · via relay' : ''}`, 'ok');
     } catch (err) {
       const blocked = err instanceof TypeError; // fetch() TypeError = CORS/network
-      setStatus(this.id, err.code === 'key' ? 'Windy key rejected' : blocked ? 'blocked by Windy (browser)' : describeError(err), 'err');
+      setStatus(this.id, err.code === 'key' ? 'Windy key rejected' : blocked ? 'blocked (browser & relay)' : describeError(err), 'err');
     }
   }
 

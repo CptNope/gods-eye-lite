@@ -2,7 +2,7 @@
 // and adsb.lol /v2/mil for military. These APIs block direct browser calls (no CORS), hence the relay.
 // Positions are dead-reckoned between polls for smooth motion.
 import { fetchJson, setStatus, describeError, planeIcon, fmt, esc } from '../util.js';
-import { relayUrl } from '../config.js';
+import { relayUrl, FLIGHTS_VIA_RELAY } from '../config.js';
 
 const R = 6371000;
 
@@ -37,6 +37,7 @@ export class FlightsLayer {
   async poll() {
     if (this.busy) return;
     const relay = relayUrl();
+    if (!FLIGHTS_VIA_RELAY && !localStorage.getItem('gel:relay')) { setStatus(this.id, 'parked · needs relay', 'warn'); return; }
     if (!relay) { setStatus(this.id, 'parked · needs relay', 'warn'); return; }
     this.busy = true;
     try {

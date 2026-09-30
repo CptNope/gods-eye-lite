@@ -8,7 +8,7 @@
 // overrides DEFAULT_ORIGINS below.
 
 const DEFAULT_ORIGINS = 'https://cptnope.github.io';
-const UA = 'gods-eye-lite-relay/1.1 (+https://github.com/CptNope/gods-eye-lite)';
+const UA = 'gods-eye-lite-relay/1.2 (+https://github.com/CptNope/gods-eye-lite)';
 
 // Same readsb-style JSON from each; tried in order until one answers 200.
 const POINT = [
@@ -28,6 +28,42 @@ const ROUTES = [
   { re: /^\/opensky\/states\/all$/, list: [['OpenSky', (q) => `https://opensky-network.org/api/states/all${q}`]], ttl: 15, query: /^\?lamin=-?[\d.]+&lomin=-?[\d.]+&lamax=-?[\d.]+&lomax=-?[\d.]+$/ },
 ];
 
+// Windy Webcams (v3) pass-through. The CALLER's own key arrives in the X-Windy-Api-Key header and is
+// forwarded for that one request — never stored or cached. Only two read endpoints, strict params.
+const WINDY = 'https://api.windy.com/webcams/api/v3/webcams';
+const WINDY_INCLUDE = /^(categories|images|location|player|urls)(,(categories|images|location|player|urls))*$/;
+const WINDY_KEY = /^[A-Za-z0-9_-]{8,128}$/;
+
+async function windy(url, request, cors) {
+  const key = request.headers.get('X-Windy-Api-Key') || '';
+  if (!WINDY_KEY.test(key)) return json({ error: 'missing or malformed Windy key' }, 400, cors);
+  const p = url.searchParams;
+  const out = new URLSearchParams();
+  const include = p.get('include') || 'images,location,urls';
+  if (!WINDY_INCLUDE.test(include)) return json({ error: 'bad include' }, 400, cors);
+  out.set('include', include);
+  let target;
+  const one = url.pathname.match(/^\/windy\/webcams\/(\d{1,12})$/);
+  if (one) {
+    target = `${WINDY}/${one[1]}`;
+  } else if (url.pathname === '/windy/webcams') {
+    const nearby = p.get('nearby') || '';
+    if (!/^-?\d{1,2}(\.\d+)?,-?\d{1,3}(\.\d+)?,\d{1,3}$/.test(nearby)) return json({ error: 'bad nearby' }, 400, cors);
+    const limit = Math.min(50, Math.max(1, Number.parseInt(p.get('limit') || '50', 10) || 50));
+    out.set('nearby', nearby); out.set('limit', String(limit));
+    target = WINDY;
+  } else {
+    return json({ error: 'not found' }, 404, cors);
+  }
+  try {
+    const up = await fetch(`${target}?${out}`, { headers: { 'X-Windy-Api-Key': key, Accept: 'application/json', 'User-Agent': UA } });
+    const body = await up.text();
+    return new Response(body, { status: up.status, headers: { ...cors, 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'X-Upstream': 'windy' } });
+  } catch (e) {
+    return json({ error: 'upstream unreachable' }, 502, cors);
+  }
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -37,6 +73,7 @@ export default {
     const cors = {
       'Access-Control-Allow-Origin': originOk ? origin : allowed[0],
       'Access-Control-Allow-Methods': 'GET, OPTIONS',
+      'Access-Control-Allow-Headers': 'X-Windy-Api-Key',
       'Access-Control-Expose-Headers': 'X-Upstream',
       'Access-Control-Max-Age': '86400',
       Vary: 'Origin',
@@ -45,6 +82,8 @@ export default {
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
     if (request.method !== 'GET') return json({ error: 'method not allowed' }, 405, cors);
     if (!originOk) return json({ error: 'origin not allowed' }, 403, cors);
+
+    if (url.pathname.startsWith('/windy/')) return windy(url, request, cors);
 
     const route = ROUTES.find((r) => r.re.test(url.pathname));
     if (!route || (route.query ? !route.query.test(url.search) : url.search)) return json({ error: 'not found' }, 404, cors);
