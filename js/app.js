@@ -7,6 +7,8 @@ import { RadarLayer, CloudsLayer, LightningLayer, WindLayer, CyclonesLayer, Aler
 import { Timeline } from './timeline.js';
 import { CctvLayer } from './layers/cctv.js';
 import { initSearch } from './search.js';
+import { TILESETS, provider, TileOverlay } from './tiles.js';
+import { OutdoorPoiLayer, OutdoorTools, makeUnits } from './outdoor.js';
 import { Styles, STYLE_ORDER } from './styles.js';
 import { vault } from './vault.js';
 import { initKeysUI, keyFor } from './keys.js';
@@ -38,30 +40,12 @@ scene.fog.enabled = true;
 viewer.clock.shouldAnimate = true;
 
 // ---------- Basemaps ----------
-const yesterday = new Date(Date.now() - 864e5).toISOString().slice(0, 10);
-const BASEMAPS = {
-  esri: () => new Cesium.UrlTemplateImageryProvider({
-    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    maximumLevel: 19, credit: 'Esri, Maxar, Earthstar Geographics, and the GIS User Community',
-  }),
-  gibs: () => new Cesium.UrlTemplateImageryProvider({
-    url: `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_SNPP_CorrectedReflectance_TrueColor/default/${yesterday}/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg`,
-    maximumLevel: 9, credit: `NASA GIBS · VIIRS SNPP true color · ${yesterday}`,
-  }),
-  osm: () => new Cesium.UrlTemplateImageryProvider({
-    url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png', subdomains: 'abcd',
-    maximumLevel: 19, credit: '© OpenStreetMap contributors © CARTO',
-  }),
-  dark: () => new Cesium.UrlTemplateImageryProvider({
-    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png', subdomains: 'abcd',
-    maximumLevel: 19, credit: '© OpenStreetMap contributors © CARTO',
-  }),
-};
+const BASEMAP_NAMES = ['esri', 'gibs', 'osm', 'dark', 'topo', 'usgs'];
 let baseLayer = null;
 function setBasemap(name) {
-  if (!BASEMAPS[name]) name = 'esri';
+  if (!BASEMAP_NAMES.includes(name) || !TILESETS[name]) name = 'esri';
   if (baseLayer) viewer.imageryLayers.remove(baseLayer, true);
-  baseLayer = viewer.imageryLayers.addImageryProvider(BASEMAPS[name](), 0);
+  baseLayer = viewer.imageryLayers.addImageryProvider(provider(name), 0);
   prefs.base = name; savePrefs();
   document.querySelectorAll('#basemap button').forEach((b) => b.classList.toggle('on', b.dataset.base === name));
 }
@@ -149,6 +133,15 @@ function flyToPos(p, range = 60000) {
 }
 
 // ---------- Layers ----------
+if (!prefs.units) prefs.units = /^en-(US|LR|MM)$/i.test(navigator.language || '') ? 'imperial' : 'metric';
+const units = makeUnits(() => prefs.units);
+const OVERLAYS = ['relief', 'trails', 'bike'];
+const outdoor = new OutdoorTools(viewer, {
+  units, getCenter: viewCenter,
+  getBasemap: () => prefs.base || 'esri',
+  getOverlays: () => OVERLAYS.filter((n) => active.has(n)),
+  onChange: () => renderTrack(),
+});
 const timeline = new Timeline();
 const layers = {
   flights: new FlightsLayer(viewer, { mode: 'civil', getCenter: viewCenter }),
@@ -163,6 +156,11 @@ const layers = {
   cyclones: new CyclonesLayer(viewer),
   alerts: new AlertsLayer(viewer),
   cctv: new CctvLayer(viewer),
+  relief: new TileOverlay(viewer, 'relief', { alpha: 0.35 }),
+  trails: new TileOverlay(viewer, 'trails', { alpha: 0.95 }),
+  bike: new TileOverlay(viewer, 'bike', { alpha: 0.9 }),
+  poi: new OutdoorPoiLayer(viewer, units),
+  tools: outdoor,
 };
 const active = new Set();
 
@@ -189,6 +187,92 @@ $('#nearestCam').addEventListener('click', async () => {
   if (!hit) return toast('No camera catalog loaded');
   select({ kind: 'camera', layer: 'cctv', cam: hit.cam });
   toast(`Nearest camera: ${hit.km < 1 ? `${Math.round(hit.km * 1000)} m` : `${fmt.num(hit.km, hit.km < 10 ? 1 : 0)} km`} away`);
+});
+
+// ---------- Outdoors ----------
+$('#units').value = prefs.units;
+$('#units').addEventListener('change', (e) => {
+  prefs.units = e.target.value; savePrefs();
+  renderTrack();
+  if (active.has('poi')) { layers.poi.loadedRect = null; layers.poi.maybeLoad(); } // relabel elevations
+  if (selected) select(selected); // re-render the open card in the new units
+});
+
+$('#condHere').addEventListener('click', () => {
+  const c = viewCenter();
+  select({ kind: 'conditions', layer: 'tools', lat: c.lat, lon: c.lon, where: 'Map center' });
+});
+$('#condMe').addEventListener('click', async () => {
+  try {
+    toast('Getting your location…');
+    const p = await outdoor.getPosition();
+    select({ kind: 'conditions', layer: 'tools', lat: p.lat, lon: p.lon, where: 'Your location' });
+  } catch (err) { toast(err.message, 5000); }
+});
+$('#myCoords').addEventListener('click', async () => {
+  try {
+    toast('Getting your location…');
+    const pos = await outdoor.getPosition();
+    select({ kind: 'coords', layer: 'tools', pos });
+  } catch (err) { toast(err.message, 5000); }
+});
+
+function renderTrack() {
+  const st = outdoor.stats();
+  const rec = outdoor.recording;
+  const hms = (s) => `${Math.floor(s / 3600)}:${String(Math.floor((s % 3600) / 60)).padStart(2, '0')}`;
+  $('#trackStats').textContent = st.n
+    ? `${units.len(st.dist)} · ${hms(st.secs)}${st.hasAlt ? ` · ↑${units.ele(st.gain)}` : ''}${rec ? ' · ● rec' : ''}`
+    : rec ? 'waiting for GPS…' : 'not recording';
+  $('#trackStats').className = rec ? 'rec' : '';
+  $('#trackRec').textContent = rec ? '■ Stop' : st.n ? '⏺ Resume' : '⏺ Record';
+  $('#trackRec').classList.toggle('on', rec);
+  $('#trackGpx').disabled = st.n < 2;
+  $('#trackClear').disabled = !st.n;
+}
+$('#trackRec').addEventListener('click', () => (outdoor.recording ? outdoor.stopRecording() : outdoor.startRecording()));
+$('#trackGpx').addEventListener('click', () => outdoor.exportGpx());
+$('#trackClear').addEventListener('click', () => { if (confirm('Delete the recorded track from this device?')) outdoor.clearTrack(); });
+renderTrack();
+
+let offlineAbort = null;
+$('#saveOffline').addEventListener('click', async () => {
+  select({ kind: 'offline', layer: 'tools' });
+  const body = $('#offBody');
+  const plan = outdoor.planOffline();
+  const areas = outdoor.offlineAreas();
+  const est = await navigator.storage?.estimate?.().catch(() => null);
+  const used = est ? ` · ${Math.round(est.usage / 1048576)} MB used on this device` : '';
+  const savedLine = `<p class="hint">${areas.length} area${areas.length === 1 ? '' : 's'} saved${used}. ${areas.length ? '<a href="#" id="offClear">Delete all saved areas</a>' : ''}</p>`;
+  if (plan.error) { body.innerHTML = `<p class="hint warn">${esc(plan.error)}</p>${savedLine}`; }
+  else {
+    const names = plan.sets.map((n) => ({ esri: 'Satellite', gibs: 'NASA', osm: 'Streets', dark: 'Dark', topo: 'Topo', usgs: 'USGS topo', relief: 'Terrain shading', trails: 'Hiking trails', bike: 'MTB trails' }[n] || n));
+    body.innerHTML = `
+      <p>Downloads the map you're looking at so it works with no signal.</p>
+      <dl><dt>Layers</dt><dd>${esc(names.join(', '))}</dd><dt>Detail</dt><dd>zoom ${plan.zMin}–${plan.zMax}</dd><dt>Tiles</dt><dd>${plan.tiles.length.toLocaleString()} (≈ ${Math.max(1, Math.round(plan.tiles.length * 0.025))} MB)</dd></dl>
+      <div class="progress" hidden><div id="offBar"></div></div>
+      <p class="hint" id="offMsg">Tip: switch to Topo and turn on Hiking trails first. Forecasts, points of interest and search still need a connection.</p>
+      <div class="links"><button id="offStart" class="primary">Download</button></div>${savedLine}`;
+    $('#offStart').addEventListener('click', async (ev) => {
+      if (offlineAbort) { offlineAbort.abort(); return; }
+      offlineAbort = new AbortController();
+      ev.target.textContent = 'Cancel';
+      body.querySelector('.progress').hidden = false;
+      const { done, failed } = await outdoor.saveOffline(plan, (d, f) => {
+        const bar = document.getElementById('offBar'); if (bar) bar.style.width = `${(d / plan.tiles.length) * 100}%`;
+        const m = document.getElementById('offMsg'); if (m) m.textContent = `Saved ${d.toLocaleString()} of ${plan.tiles.length.toLocaleString()} tiles${f ? ` (${f} failed)` : ''}…`;
+      }, offlineAbort.signal);
+      const aborted = offlineAbort.signal.aborted;
+      offlineAbort = null;
+      const m = document.getElementById('offMsg');
+      if (m) m.textContent = aborted ? `Stopped after ${done.toLocaleString()} tiles (kept).` : `✓ Saved ${(done - failed).toLocaleString()} tiles${failed ? `, ${failed} failed (retry to fill gaps)` : ''}. This area now works offline.`;
+      const b = document.getElementById('offStart'); if (b) { b.textContent = 'Download again'; }
+    });
+  }
+  document.getElementById('offClear')?.addEventListener('click', async (e) => {
+    e.preventDefault();
+    if (confirm('Delete all saved offline map areas from this device?')) { await outdoor.clearOffline(); toast('Offline areas deleted'); deselect(); }
+  });
 });
 
 $('#radarSource').value = prefs.radarSource || 'global';
@@ -245,7 +329,7 @@ function select(id) {
   $('#card').hidden = false;
   if (window.innerWidth < 640) $('#panel').classList.add('closed'); // card and panel share the screen on phones
   const p = positionOfSelected();
-  const range = { satellite: 2.5e6, aircraft: 40000, storm: 1.8e6, alert: 600000, camera: 1200 }[id.kind] || 400000;
+  const range = { satellite: 2.5e6, aircraft: 40000, storm: 1.8e6, alert: 600000, camera: 1200, poi: 3000 }[id.kind] || 400000;
   if (p) flyToPos(p, range);
   if (canFollow) $('#followBtn').addEventListener('click', () => (following ? stopFollow() : startFollow()));
 }

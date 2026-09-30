@@ -13,8 +13,8 @@
     script-src 'self' https://cdn.jsdelivr.net 'wasm-unsafe-eval';
     worker-src 'self' blob: https://cdn.jsdelivr.net;
     style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net;
-    img-src 'self' data: blob: https://cdn.jsdelivr.net https://server.arcgisonline.com https://gibs.earthdata.nasa.gov https://*.basemaps.cartocdn.com https://tilecache.rainviewer.com https://nowcoast.noaa.gov https://*.cesium.com https://tile.googleapis.com https://cctv.austinmobility.io https://cwwp2.dot.ca.gov https://s3-eu-west-1.amazonaws.com https://511on.ca https://weathercam.digitraffic.fi https://www.drivebc.ca https://ristmikud.tallinn.ee https://tarktee.transpordiamet.ee https://webcams.transport.nsw.gov.au https://trafficcam.calgary.ca https://webcam.warendorf.de;
-    connect-src 'self' https://cdn.jsdelivr.net https://celestrak.org https://earthquake.usgs.gov https://ll.thespacedevs.com https://server.arcgisonline.com https://gibs.earthdata.nasa.gov https://*.basemaps.cartocdn.com https://api.rainviewer.com https://tilecache.rainviewer.com https://api.open-meteo.com https://nowcoast.noaa.gov https://mapservices.weather.noaa.gov https://api.weather.gov https://photon.komoot.io https://nominatim.openstreetmap.org https://*.cesium.com https://tile.googleapis.com https://*.workers.dev;
+    img-src 'self' data: blob: https://cdn.jsdelivr.net https://server.arcgisonline.com https://gibs.earthdata.nasa.gov https://*.basemaps.cartocdn.com https://tilecache.rainviewer.com https://nowcoast.noaa.gov https://*.cesium.com https://tile.googleapis.com https://cctv.austinmobility.io https://cwwp2.dot.ca.gov https://s3-eu-west-1.amazonaws.com https://511on.ca https://weathercam.digitraffic.fi https://www.drivebc.ca https://ristmikud.tallinn.ee https://tarktee.transpordiamet.ee https://webcams.transport.nsw.gov.au https://trafficcam.calgary.ca https://webcam.warendorf.de https://*.tile.opentopomap.org https://tile.waymarkedtrails.org https://basemap.nationalmap.gov;
+    connect-src 'self' https://cdn.jsdelivr.net https://celestrak.org https://earthquake.usgs.gov https://ll.thespacedevs.com https://server.arcgisonline.com https://gibs.earthdata.nasa.gov https://*.basemaps.cartocdn.com https://api.rainviewer.com https://tilecache.rainviewer.com https://api.open-meteo.com https://nowcoast.noaa.gov https://mapservices.weather.noaa.gov https://api.weather.gov https://photon.komoot.io https://nominatim.openstreetmap.org https://*.cesium.com https://tile.googleapis.com https://*.workers.dev https://*.tile.opentopomap.org https://tile.waymarkedtrails.org https://basemap.nationalmap.gov https://overpass-api.de;
     font-src 'self' data: https://cdn.jsdelivr.net;
     manifest-src 'self';
     media-src 'none';
@@ -80,6 +80,32 @@
     </section>
 
     <section>
+      <h2>Outdoors</h2>
+      <label class="row"><input type="checkbox" data-layer="trails" /> <span>🥾 Hiking trails</span><em data-status="trails"></em></label>
+      <label class="row"><input type="checkbox" data-layer="bike" /> <span>🚵 Mountain-bike trails</span><em data-status="bike"></em></label>
+      <label class="row"><input type="checkbox" data-layer="relief" /> <span>⛰️ Terrain shading</span><em data-status="relief"></em></label>
+      <label class="row"><input type="checkbox" data-layer="poi" /> <span>📍 Peaks, water, shelters, camps</span><em data-status="poi"></em></label>
+      <div class="btn-grid">
+        <button id="condHere">🌤️ Conditions here</button>
+        <button id="condMe">🌤️ At my location</button>
+        <button id="myCoords">📋 My coordinates</button>
+        <button id="saveOffline">💾 Save area offline</button>
+      </div>
+      <div class="track-box">
+        <div class="track-head"><b>Track</b><span id="trackStats">not recording</span></div>
+        <div class="btn-grid three">
+          <button id="trackRec">⏺ Record</button>
+          <button id="trackGpx" disabled>⬇ GPX</button>
+          <button id="trackClear" disabled>✕ Clear</button>
+        </div>
+      </div>
+      <label class="row units">Units
+        <select id="units" aria-label="Units"><option value="imperial">Imperial (mi, ft, °F)</option><option value="metric">Metric (km, m, °C)</option></select>
+      </label>
+      <p class="hint">Tip: pick <b>Topo</b> under Basemap, turn on trails, then <b>Save area offline</b> before you lose signal. Trail data © OpenStreetMap — always carry a real map.</p>
+    </section>
+
+    <section>
       <h2>Cameras</h2>
       <label class="row"><input type="checkbox" data-layer="cctv" /> <span>📷 Public traffic cameras</span><em data-status="cctv"></em></label>
       <button id="nearestCam" class="wide">🎯 Nearest camera to view</button>
@@ -110,6 +136,8 @@
         <button data-base="gibs">Today (NASA)</button>
         <button data-base="osm">Streets</button>
         <button data-base="dark">Dark</button>
+        <button data-base="topo">Topo</button>
+        <button data-base="usgs">USGS (US)</button>
       </div>
       <label class="row"><input type="checkbox" id="photoreal" /> <span>Photorealistic 3D</span><em id="photorealStatus">needs key</em></label>
     </section>
@@ -140,7 +168,7 @@
     <footer class="credits">
       Inspired by <a href="https://github.com/bilawalsidhu/gods-eye-view" target="_blank" rel="noopener">God's Eye View</a> (MIT).
       Cameras: TfL, Caltrans, Fintraffic, DriveBC, City of Tallinn, Austin TPW, Live Traffic NSW, City of Calgary (catalog via God's Eye View loaders). Data: adsb.lol, OpenSky, CelesTrak, USGS, The Space Devs, NOAA (nowCOAST, NHC, NWS), RainViewer, Open-Meteo, Esri, NASA GIBS, OSM/CARTO.
-      Search © OpenStreetMap contributors via Photon (komoot) and Nominatim. Your device location stays on your device. Exploratory only — not for navigation or safety decisions.
+      Search © OpenStreetMap contributors via Photon (komoot) and Nominatim. Trails © Waymarked Trails; topo © OpenTopoMap, USGS, Esri; outdoor points via Overpass API. Your device location stays on your device. Exploratory only — not for navigation or safety decisions.
     </footer>
   </aside>
 

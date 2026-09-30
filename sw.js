@@ -2,21 +2,23 @@
 // - App shell (same origin): network-first, bypassing the HTTP cache, so deploys show up on the next load;
 //   the precached copy is used only when offline.
 // - CDN libraries (Cesium, satellite.js): stale-while-revalidate.
-// - Map tiles: cache-first with a size cap so revisited areas load offline.
+// - Map tiles: cache-first. Recently viewed tiles live in a capped cache; areas the user explicitly
+//   saves ("Save area offline") live in 'gel-offline', which is never trimmed or version-cleaned.
 // - Live data APIs: network-only (the app itself keeps stale copies where useful).
-const VERSION = 'gel-v9';
+const VERSION = 'gel-v10';
 const SHELL = [
   './', './index.html', './css/app.css', './manifest.webmanifest',
   './js/boot.js', './js/app.js', './js/config.js', './js/util.js', './js/styles.js',
-  './js/vault.js', './js/keys.js', './js/timeline.js', './js/search.js',
+  './js/vault.js', './js/keys.js', './js/timeline.js', './js/search.js', './js/tiles.js', './js/outdoor.js',
   './js/layers/flights.js', './js/layers/satellites.js', './js/layers/quakes.js', './js/layers/launches.js',
   './js/layers/weather.js', './js/layers/cctv.js',
   './icons/icon-192.png', './icons/icon-512.png',
 ];
-const TILE_HOSTS = ['server.arcgisonline.com', 'gibs.earthdata.nasa.gov', 'basemaps.cartocdn.com', 'tilecache.rainviewer.com'];
+const TILE_HOSTS = ['server.arcgisonline.com', 'gibs.earthdata.nasa.gov', 'basemaps.cartocdn.com', 'tilecache.rainviewer.com', 'tile.opentopomap.org', 'tile.waymarkedtrails.org', 'basemap.nationalmap.gov'];
+const OFFLINE_CACHE = 'gel-offline'; // written by the page's "Save area offline"
 const LIB_HOSTS = ['cdn.jsdelivr.net'];
 const TILE_CACHE = 'gel-tiles'; // survives app updates
-const MAX_TILES = 1500;
+const MAX_TILES = 2500;
 
 self.addEventListener('install', (e) => {
   // cache: 'reload' skips the browser HTTP cache (GitHub Pages sends max-age=600), so we never precache stale files.
@@ -30,7 +32,7 @@ self.addEventListener('install', (e) => {
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => !k.startsWith(VERSION) && k !== TILE_CACHE).map((k) => caches.delete(k))))
+      .then((keys) => Promise.all(keys.filter((k) => !k.startsWith(VERSION) && k !== TILE_CACHE && k !== OFFLINE_CACHE).map((k) => caches.delete(k))))
       .then(() => self.clients.claim()),
   );
 });
@@ -73,9 +75,11 @@ async function staleWhileRevalidate(req, name) {
 }
 
 async function cacheFirstTile(req) {
-  const cache = await caches.open(TILE_CACHE);
-  const hit = await cache.match(req);
+  // Look in every cache (saved areas + recent tiles). ignoreVary: saved tiles were stored without the
+  // Origin header the map's own requests carry.
+  const hit = await caches.match(req, { ignoreVary: true });
   if (hit) return hit;
+  const cache = await caches.open(TILE_CACHE);
   try {
     const res = await fetch(req);
     if (res.ok) {

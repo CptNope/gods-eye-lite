@@ -170,3 +170,29 @@ button.wide { width: 100%; margin: 4px 0 2px; }
   .search { width: calc(100vw - 120px); }
   .panel { top: calc(env(safe-area-inset-top) + 92px); }
 }
+
+/* ---------- Outdoors ---------- */
+.btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 8px 0 4px; }
+.btn-grid.three { grid-template-columns: 1.3fr 1fr 1fr; margin: 6px 0 0; }
+.btn-grid button { font-size: 12px; padding: 7px 6px; }
+.btn-grid button:disabled { opacity: 0.4; cursor: default; }
+.btn-grid button.on { background: rgba(255,59,212,0.18); border-color: #ff3bd4; }
+.track-box { border: 1px solid var(--line); border-radius: 8px; padding: 7px 8px; margin-top: 6px; }
+.track-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 12px; }
+#trackStats { color: var(--dim); font-size: 11px; text-align: right; }
+#trackStats.rec { color: #ff3bd4; }
+.row.units { cursor: default; justify-content: space-between; margin-top: 6px; }
+.row.units select { width: auto; flex: 0 1 190px; }
+.hint.warn { color: var(--warn); }
+.warnbox { background: rgba(255,179,71,0.12); border: 1px solid rgba(255,179,71,0.5); border-radius: 6px; padding: 6px 8px; margin: 6px 0; font-size: 12px; line-height: 1.5; }
+.hours { display: flex; gap: 4px; margin: 6px 0; }
+.hours span { flex: 1; text-align: center; font-size: 11px; border: 1px solid var(--line); border-radius: 6px; padding: 4px 2px; }
+.hours b { display: block; color: var(--dim); font-weight: normal; }
+.hours i { display: block; font-style: normal; color: #6ec6ff; }
+.bigcoords { font-size: 18px; letter-spacing: 0.03em; color: #fff; margin: 4px 0 8px; user-select: all; }
+.card .links button { font-size: 12px; }
+.card .links a { font-size: 12px; }
+.progress { height: 6px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden; margin: 8px 0 4px; }
+.progress[hidden] { display: none; }
+#offBar { height: 100%; width: 0; background: var(--accent); transition: width .2s; }
+.card { max-height: calc(100vh - 140px); overflow-y: auto; }

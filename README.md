@@ -14,6 +14,11 @@ A static, installable PWA that puts the **keyless** feeds from
 | 🚀 Upcoming launches + countdown list | Launch Library 2 (The Space Devs) | none |
 | 📷 ~2,400 public traffic cameras with live stills: London, California, Finland, British Columbia, Tallinn, Austin, Sydney, Calgary | Catalog built daily on GitHub Actions with God's Eye View's MIT CCTV loaders; images load straight from each operator | none |
 | 🔎 Address & place search with suggestions, plus 📍 your device location | Photon (komoot) type-ahead, Nominatim on Enter, both OpenStreetMap; browser Geolocation API | none |
+| 🥾 Hiking & MTB trail overlays, terrain shading | Waymarked Trails, Esri World Hillshade | none |
+| 🗺️ Topo basemaps | OpenTopoMap (worldwide), USGS National Map (US) | none |
+| 📍 Peaks, trailheads, water, springs, shelters, campsites, viewpoints, toilets, waterfalls, named hiking routes (click for details, elevation profile & GPX via Waymarked Trails) | OpenStreetMap via Overpass API, loaded for the area in view | none |
+| 🌤️ Trail conditions: now, feels-like, gusts, 12 h rain chance, UV, daylight left, thunderstorm / wind / cold warnings, elevation | Open-Meteo | none |
+| ⏺ GPS track recorder (distance, time, elevation gain) with GPX export; 📋 my coordinates (decimal + DMS, copy/share); 💾 save the current area offline | Browser Geolocation, Wake Lock, Cache Storage — all on-device | none |
 | 🌧️ Rain radar with 3-hour playback | RainViewer (global) or NOAA nowCOAST (US high-res) | none |
 | ☁️ Satellite clouds (IR) + ⚡ lightning density | NOAA nowCOAST | none |
 | 🌬️ Animated 10 m wind | Open-Meteo | none |
@@ -53,6 +58,13 @@ Tested in a real browser on 2026-09-29: adsb.lol, OpenSky, airplanes.live, adsb.
 Any later change under `relay/` redeploys automatically.
 
 Free tier = 100,000 requests/day; with the built-in caching one active viewer uses roughly 400 requests/hour.
+
+## Outdoors: honest limits
+
+- **Tracks record only while the app is on screen.** Phones pause web apps in the background, so the recorder asks to keep the screen awake. For all-day logging, a native app is more reliable.
+- **Offline areas** save map tiles (basemap + any trail/shading overlays you have on) for the current view, up to ~2,500 tiles (~60 MB). Search, forecasts and points of interest still need a signal.
+- Trail, water and shelter data come from OpenStreetMap volunteers and can be wrong or out of date. Carry a paper map and compass; treat natural water.
+- Location is only used on your device. Recorded tracks stay in this browser until you export or clear them.
 
 ## Traffic cameras: how the catalog works
 
