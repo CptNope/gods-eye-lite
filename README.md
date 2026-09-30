@@ -40,6 +40,14 @@ Plus: CRT / NVG / FLIR / Noir sensor shaders (keys `1`–`5`), click-to-inspect 
 
 Everything uses relative paths, so it works under a project sub-path or a custom domain unchanged.
 
+## Relay Worker (`relay/worker.js`, deployed as `gel-relay.jeremy-anderson.workers.dev`)
+
+Answers only `https://cptnope.github.io`. Routes:
+- `/windy/webcams?nearby=lat,lon,km` and `/windy/webcams/{id}`: Windy Webcams pass-through. The viewer's own key arrives in `X-Windy-Api-Key` and is forwarded for that request only (not stored or cached). The app calls Windy directly first and uses this route only if the browser is blocked.
+- `/v2/lat/…`, `/v2/mil`, `/opensky/states/all`: flights (parked, see below).
+
+To update it: paste the minified `relay/worker.js` into the Cloudflare dashboard editor and Deploy, or add `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` repo secrets and run the *Deploy flight relay* workflow.
+
 ## Flights (parked)
 
 **Status, 2026-09-29:** a Cloudflare Worker relay was deployed and tested, but every free flight source refuses Cloudflare's network — adsb.lol `429`, airplanes.live `403`, adsb.fi `403`, OpenSky `522` (connection refused before any login, so an OpenSky account doesn't help). Flights are therefore off by default. To revive them, run the same relay logic on an ordinary server (e.g. a small DigitalOcean droplet) after confirming `curl -s -o /dev/null -w "%{http_code}" https://api.adsb.lol/v2/mil` returns `200` from it, then add that host to `connect-src` in the CSP and set `RELAY_URL`.
