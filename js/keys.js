@@ -162,15 +162,19 @@ export function initKeysUI({ relayGet, relaySet }) {
   function renderCreate() {
     const legacy = legacyIonToken();
     body.innerHTML = `
-      <h2>Power up</h2>
-      <p>Everything works without keys. To add your own, create an <b>encrypted key vault</b> on this device. Keys are encrypted with your passphrase (AES-256) and only decrypted in memory after you unlock.</p>
-      ${legacy ? '<p class="warn">⚠ A Cesium ion token from the previous version is stored <b>unencrypted</b>. Creating a vault moves it inside and deletes the plaintext copy.</p>' : ''}
-      <p class="hint">Keys you can add: <b>Windy Webcams</b> (free) for webcams, <b>Cesium ion</b> (free, personal use) for photorealistic 3D cities, or a <b>Google Map Tiles</b> key. Each one has step-by-step instructions after you create the vault.</p>
-      <label>New passphrase (10+ characters)<input id="pass1" type="password" autocomplete="new-password" minlength="10" /></label>
-      <label>Repeat passphrase<input id="pass2" type="password" autocomplete="new-password" /></label>
-      <p class="hint">There's no recovery: forget it and you just delete the vault and re-enter keys.</p>
+      <h2>Power up: add your API keys</h2>
+      <p class="hint">Everything works without keys. Paste any keys you have below; they're saved in an <b>encrypted vault</b> on this device, locked with a passphrase you choose (AES-256), and only decrypted after you unlock.</p>
+      ${legacy ? '<p class="warn">⚠ A Cesium ion token from the previous version is stored <b>unencrypted</b>. Creating the vault moves it inside and deletes the plaintext copy.</p>' : ''}
+      <fieldset class="pass-box">
+        <legend>1. Choose a vault passphrase</legend>
+        <label>Passphrase (10+ characters)<input id="pass1" type="password" autocomplete="new-password" minlength="10" /></label>
+        <label>Repeat passphrase<input id="pass2" type="password" autocomplete="new-password" /></label>
+        <p class="hint">There's no recovery: if you forget it, delete the vault and re-enter your keys.</p>
+      </fieldset>
+      <h3 class="keys-h">2. Paste your keys <small>(any or none; you can add more later)</small></h3>
+      ${keyList()}
       ${relayBlock()}
-      <div class="dialog-actions"><button value="close">Not now</button><button class="primary" data-act="create">Create vault</button></div>`;
+      <div class="dialog-actions"><button value="close">Not now</button><button type="button" class="primary" data-act="create">Create vault &amp; save keys</button></div>`;
   }
 
   function renderUnlock() {
@@ -198,30 +202,33 @@ export function initKeysUI({ relayGet, relaySet }) {
           ${vault.has(p.id) ? '<span class="tag set">saved</span>' : ''}
         </div>
         <p class="hint">${esc(p.unlocks)}</p>
-        <details class="howto"${!vault.has(p.id) && p.status === 'active' && p.id === 'windy' ? ' open' : ''}>
+        <details class="howto">
           <summary>How to get this key</summary>
           <ol>${steps}</ol>
           ${p.notes ? `<p class="hint">${esc(p.notes)}</p>` : ''}
         </details>
         <div class="key-row">
-          <input type="password" autocomplete="off" spellcheck="false" data-key="${p.id}" aria-label="${esc(p.name)} key" placeholder="${vault.has(p.id) ? '•••••••• saved (type to replace)' : 'paste key'}" />
+          <input type="password" autocomplete="off" spellcheck="false" data-key="${p.id}" aria-label="${esc(p.name)} key" placeholder="${vault.has(p.id) ? '•••••••• saved (type to replace)' : `paste ${esc(p.name)} key`}" />
+          <button type="button" class="icon" data-act="reveal" data-id="${p.id}" title="Show / hide" aria-label="Show or hide ${esc(p.name)} key">👁</button>
           ${p.test ? `<button type="button" data-act="test" data-id="${p.id}">Test</button>` : ''}
         </div>
         <p class="hint test-msg" id="test-${p.id}" hidden></p>
       </div>`;
   }
 
-  function renderEdit() {
+  function keyList() {
     const active = PROVIDERS.filter((p) => p.status === 'active').map(providerRow).join('');
     const next = PROVIDERS.filter((p) => p.status !== 'active').map(providerRow).join('');
+    return `
+      <h4 class="group-h">Used by the app now</h4>${active}
+      <h4 class="group-h">For layers being built <small>(save now; they're used once each layer ships)</small></h4>${next}`;
+  }
+
+  function renderEdit() {
     body.innerHTML = `
       <h2>Power up <span class="tag set">🔓 unlocked</span></h2>
-      <p class="hint">Add your own API keys. They're encrypted on this device and only decrypted after you unlock. Leave a field empty to keep a saved key.</p>
-      ${active}
-      <details class="coming">
-        <summary>Coming soon (you can store these keys now)</summary>
-        ${next}
-      </details>
+      <p class="hint">Add or replace your API keys. They're encrypted on this device and only decrypted after you unlock. Leave a field empty to keep a saved key.</p>
+      ${keyList()}
       <label class="row"><input type="checkbox" id="removeMode" /> <span>Remove keys whose fields I cleared</span></label>
       ${relayBlock()}
       <div class="dialog-actions">
@@ -255,6 +262,7 @@ export function initKeysUI({ relayGet, relaySet }) {
     if (!act) return;
     e.preventDefault();
     if (act === 'test') { testKey(e.target.dataset.id, e.target); return; }
+    if (act === 'reveal') { const inp = body.querySelector(`[data-key="${e.target.dataset.id}"]`); if (inp) inp.type = inp.type === 'password' ? 'text' : 'password'; return; }
     try {
       if (act === 'relay') { if (saveRelay()) dlg.close(); }
       if (act === 'create') {
@@ -263,9 +271,12 @@ export function initKeysUI({ relayGet, relaySet }) {
         if (!saveRelay()) return;
         e.target.disabled = true; e.target.textContent = 'Encrypting…';
         const legacy = legacyIonToken();
-        await vault.create(a, legacy ? { ion: legacy } : {});
+        const initial = legacy ? { ion: legacy } : {};
+        for (const inp of body.querySelectorAll('[data-key]')) { const v = inp.value.trim(); if (v) initial[inp.dataset.key] = v; }
+        await vault.create(a, initial);
         localStorage.removeItem(LEGACY_ION);
-        toast('Vault created');
+        const n = Object.keys(initial).length;
+        toast(n ? `Vault created — ${n} key${n === 1 ? '' : 's'} saved (encrypted)` : 'Vault created — add keys any time');
         render();
       }
       if (act === 'unlock') {
@@ -297,7 +308,7 @@ export function initKeysUI({ relayGet, relaySet }) {
   });
 
   body.addEventListener('keydown', (e) => {
-    if (e.key !== 'Enter' || e.target.tagName !== 'INPUT' || e.target.type === 'checkbox') return;
+    if (e.key !== 'Enter' || e.target.tagName !== 'INPUT' || e.target.type === 'checkbox' || e.target.dataset.key) return;
     e.preventDefault();
     body.querySelector('.dialog-actions .primary')?.click();
   });

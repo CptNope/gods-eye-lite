@@ -188,9 +188,9 @@ Everything works without keys. Keys add extra layers, and each visitor adds **th
 ### Adding a key in the app
 
 1. Open the panel (☰) → **⚡ Power up (API keys)**.
-2. The first time, create a **key vault** with a passphrase (10+ characters). After that, the app asks you to unlock it once per session, or you can skip and stay keyless.
-3. Each key has a **How to get this key** guide. Paste your key, press **Test** to check it with the provider, then **Save**.
-4. The 🔒/🔓 chip at the top right shows whether your keys are unlocked. **Lock** clears them from memory.
+2. The first time, one screen asks for a **vault passphrase** (10+ characters) and shows a field for **every** key. Paste any keys you have (👁 shows what you pasted, **Test** checks it with the provider), then **Create vault & save keys**.
+3. Next time, unlock with your passphrase to use the keys this session, or skip and stay keyless. Open Power up again to add or replace keys.
+4. The 🔒/🔓 chip at the top right shows whether your keys are unlocked and reopens the vault. **Lock** clears the keys from memory.
 
 ### Which keys, and how to get them
 

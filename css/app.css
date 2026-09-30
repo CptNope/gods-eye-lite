@@ -212,3 +212,11 @@ details.coming { margin: 10px 0; border-top: 1px solid var(--line); padding-top:
 details.coming > summary { cursor: pointer; color: var(--dim); font-size: 12px; }
 /* Windy images: never upscaled (terms), capped to the card width */
 .wc-img { display: block; width: auto; max-width: 100%; height: auto; margin: 4px 0 6px; border: 1px solid var(--line); border-radius: 6px; }
+
+/* ---------- Power up: single-screen setup ---------- */
+.pass-box { border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px 8px; margin: 10px 0; }
+.pass-box legend, h3.keys-h { font-size: 13px; color: #fff; padding: 0 4px; }
+h3.keys-h { margin: 14px 0 4px; padding: 0; }
+h3.keys-h small, h4.group-h small { color: var(--dim); font-weight: normal; }
+h4.group-h { margin: 12px 0 2px; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--dim); }
+.key-row button.icon { padding: 6px 8px; }
