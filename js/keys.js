@@ -74,10 +74,57 @@ export const PROVIDERS = [
       return { ok: false, msg: `Google answered HTTP ${res.status}${why ? `: ${why.slice(0, 140)}` : ''}` };
     },
   },
-  { id: 'tomtom', name: 'TomTom', status: 'next', route: 'browser', cost: 'Free tier', unlocks: 'Live traffic congestion overlay.', get: 'https://developer.tomtom.com/', steps: ['Create a free account at <a href="https://developer.tomtom.com/" target="_blank" rel="noopener">developer.tomtom.com</a>.', 'Your dashboard shows a default API key; restrict it to <code>{origin}</code>.'], notes: '' },
-  { id: 'firms', name: 'NASA FIRMS map key', status: 'next', route: 'relay', cost: 'Free', unlocks: 'Active fire detections (last 24 h).', get: 'https://firms.modaps.eosdis.nasa.gov/api/map_key/', steps: ['Request a free MAP_KEY at <a href="https://firms.modaps.eosdis.nasa.gov/api/map_key/" target="_blank" rel="noopener">firms.modaps.eosdis.nasa.gov</a>; it’s emailed to you.'], notes: 'Will go through the relay because FIRMS blocks browser calls.' },
-  { id: 'aisstream', name: 'AISStream', status: 'next', route: 'relay', cost: 'Free', unlocks: 'Live ship positions.', get: 'https://aisstream.io/', steps: ['Sign in at <a href="https://aisstream.io/" target="_blank" rel="noopener">aisstream.io</a> with GitHub and create an API key.'], notes: 'Needs a streaming relay on a server; not built yet.' },
-  { id: 'openai', name: 'OpenAI', status: 'next', route: 'browser', cost: 'Metered', unlocks: 'Voice control + AI scene summary (will ship with a spend cap).', get: 'https://platform.openai.com/api-keys', steps: ['Create a <b>project</b> key at <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">platform.openai.com</a> and set a monthly budget on the project.'], notes: '' },
+  {
+    id: 'tomtom', name: 'TomTom', status: 'next', route: 'browser', cost: 'Free tier, no card',
+    unlocks: 'Live traffic congestion overlay (layer not built yet).',
+    get: 'https://my.tomtom.com/',
+    steps: [
+      'Sign up at <a href="https://developer.tomtom.com/" target="_blank" rel="noopener">developer.tomtom.com</a> (Get started → my.tomtom.com; no credit card).',
+      'Your dashboard shows an API key for the free evaluation plan; copy it (or create one under <b>Keys</b>).',
+      'If your dashboard offers domain whitelisting for the key, add <code>{origin}</code>.',
+      'Paste it below, <b>Test</b>, <b>Save</b>. The traffic layer will use it once it’s built.',
+    ],
+    notes: 'Free evaluation: about 200,000 traffic/map tile requests and 2,500–20,000 other requests per month depending on the API. The Test loads one traffic tile over Worcester.',
+    test: async (key) => {
+      const res = await fetch(`https://api.tomtom.com/traffic/map/4/tile/flow/relative0/12/1226/1512.png?key=${encodeURIComponent(key)}`, { signal: AbortSignal.timeout(12000) });
+      if (res.ok) return { ok: true, msg: 'Key works — traffic flow tiles are available.' };
+      if (res.status === 403 || res.status === 401) return { ok: false, msg: 'TomTom rejected this key (or it isn’t allowed on this site).' };
+      return { ok: false, msg: `TomTom answered HTTP ${res.status}.` };
+    },
+  },
+  {
+    id: 'firms', name: 'NASA FIRMS map key', status: 'next', route: 'relay', cost: 'Free',
+    unlocks: 'Active fire detections from satellites, last 24 h (layer not built yet).',
+    get: 'https://firms.modaps.eosdis.nasa.gov/api/map_key/',
+    steps: [
+      'Open <a href="https://firms.modaps.eosdis.nasa.gov/api/map_key/" target="_blank" rel="noopener">FIRMS MAP_KEY</a> and enter your email.',
+      'The key arrives by email. Paste it below and <b>Save</b>.',
+    ],
+    notes: 'Limit: 5,000 transactions per 10 minutes (bigger requests count as several). FIRMS blocks browser requests, so the fires layer will go through the relay Worker; that’s also why there’s no Test button yet.',
+  },
+  {
+    id: 'aisstream', name: 'AISStream', status: 'next', route: 'relay', cost: 'Free',
+    unlocks: 'Live ship positions (layer not built yet).',
+    get: 'https://aisstream.io/',
+    steps: [
+      'Sign in at <a href="https://aisstream.io/" target="_blank" rel="noopener">aisstream.io</a> and open your <b>Account</b> page.',
+      'Create an API key. It’s shown only once, so copy it straight away.',
+      'Paste it below and <b>Save</b>.',
+    ],
+    notes: 'AISStream doesn’t allow direct browser connections; its key is meant to live on a server that streams only the data the app needs. Ships need a streaming relay, which isn’t built yet, so there’s no Test button.',
+  },
+  {
+    id: 'openai', name: 'OpenAI', status: 'next', route: 'relay', cost: 'Metered (pay per use)',
+    unlocks: 'Voice control + AI scene summary (not built yet; will ship with a spend cap).',
+    get: 'https://platform.openai.com/api-keys',
+    steps: [
+      'Sign in at <a href="https://platform.openai.com/" target="_blank" rel="noopener">platform.openai.com</a> and add billing credit.',
+      'Create a separate <b>project</b> for this app and set its usage limits / budget alerts.',
+      'Under <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">API keys</a>, create a key for that project (restrict its permissions if the option is offered).',
+      'Paste it below and <b>Save</b>.',
+    ],
+    notes: 'This is the only key that costs real money per use. OpenAI keys shouldn’t be used directly from browser code, so the voice feature will use the relay to get short-lived session tokens; the key would only pass through it per request. No Test button, so nothing is spent.',
+  },
 ];
 
 const LEGACY_ION = 'gel:ionToken'; // plaintext token from v1 — migrated into the vault

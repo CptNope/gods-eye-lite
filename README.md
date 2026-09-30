@@ -199,7 +199,12 @@ Everything works without keys. Keys add extra layers, and each visitor adds **th
 | **Windy Webcams** | 📹 Webcams around the map view | Free | [api.windy.com/keys](https://api.windy.com/keys) |
 | **Cesium ion** | 🏙️ Photorealistic 3D cities + world terrain | Free (personal, non-commercial) | [ion.cesium.com/tokens](https://ion.cesium.com/tokens) |
 | **Google Map Tiles** | Same 3D tiles direct from Google | Metered, with a monthly free allowance | [Google Cloud Console](https://console.cloud.google.com/google/maps-apis/credentials) |
-| TomTom, NASA FIRMS, AISStream, OpenAI | Traffic flow, fires, ships, voice (not built yet) | Free / metered | Links in the app under *Coming soon* |
+| TomTom | 🚦 Live traffic flow *(layer not built yet)* | Free tier, no card | [developer.tomtom.com](https://developer.tomtom.com/) |
+| NASA FIRMS | 🔥 Active fires *(layer not built yet)* | Free | [FIRMS MAP_KEY](https://firms.modaps.eosdis.nasa.gov/api/map_key/) |
+| AISStream | 🚢 Live ships *(needs a streaming server; not built yet)* | Free | [aisstream.io](https://aisstream.io/) |
+| OpenAI | 🎙️ Voice control + AI summary *(not built yet)* | Metered, pay per use | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) |
+
+Keys for features that aren't built yet can be saved now (under *Coming soon* in Power up) and will be picked up when those layers ship. **Test** is available for Windy, Cesium ion, Google and TomTom; the others either block browsers (FIRMS, AISStream) or would spend money (OpenAI).
 
 #### Windy Webcams (free)
 
@@ -226,6 +231,44 @@ Only needed for commercial use or if you already have a Google Cloud project; ot
 3. **Credentials → Create credentials → API key.** Restrict it to the Map Tiles API and to `https://cptnope.github.io/*` as a website.
 4. Set a budget alert, then paste the key into **⚡ Power up**, **Test** and **Save**.
 
+#### TomTom (free tier, not used yet)
+
+1. Sign up at [developer.tomtom.com](https://developer.tomtom.com/) (*Get started* → my.tomtom.com). No credit card.
+2. Your dashboard shows an API key for the free evaluation plan; copy it, or create one under *Keys*.
+3. If your dashboard offers domain whitelisting for the key, add `https://cptnope.github.io`.
+4. Paste it into **⚡ Power up → Coming soon → TomTom**, **Test** (loads one traffic tile over Worcester), **Save**.
+
+Free evaluation, per [TomTom pricing](https://docs.tomtom.com/pricing): roughly 200,000 map/traffic tile requests and 2,500–20,000 other requests per month depending on the API.
+
+#### NASA FIRMS (free, not used yet)
+
+1. Open the [FIRMS MAP_KEY page](https://firms.modaps.eosdis.nasa.gov/api/map_key/) and enter your email.
+2. The key arrives by email; paste it into **⚡ Power up → Coming soon → NASA FIRMS** and **Save**.
+
+Limit: 5,000 transactions per 10 minutes (bigger requests count as several). FIRMS blocks browser requests, so the fires layer will call it through the relay Worker; there's no Test button until that route exists.
+
+#### AISStream (free, not used yet)
+
+1. Sign in at [aisstream.io](https://aisstream.io/) and open your **Account** page.
+2. Create an API key. It's shown only once, so copy it straight away.
+3. Paste it into **⚡ Power up → Coming soon → AISStream** and **Save**.
+
+AISStream's [documentation](https://aisstream.io/documentation) doesn't allow direct browser connections; the key belongs on a server that streams only what the app needs. Ships therefore need a streaming relay before this key does anything.
+
+#### OpenAI (metered, not used yet)
+
+1. Sign in at [platform.openai.com](https://platform.openai.com/) and add billing credit.
+2. Create a separate **project** for this app and set its usage limits / budget alerts.
+3. Under [API keys](https://platform.openai.com/api-keys), create a key for that project (restrict its permissions if offered).
+4. Paste it into **⚡ Power up → Coming soon → OpenAI** and **Save**.
+
+This is the only key that costs money per use. OpenAI keys shouldn't be used directly from browser code, so the planned voice feature will use the relay to get short-lived session tokens, with the key only passing through per request. There's deliberately no Test button, so nothing is spent.
+
+### Other settings
+
+- **Relay URL** (in Power up, not secret): defaults to this site's Cloudflare Worker. Point it at your own `*.workers.dev` relay if you run a copy; other domains need adding to `connect-src` in the CSP.
+- **Units** (Outdoors section): imperial or metric; defaults to imperial in the US.
+
 ### How keys are protected
 
 - **Encrypted at rest.** AES-256-GCM with a key derived from your passphrase (PBKDF2-SHA-256, 600,000 iterations, random salt; fresh nonce on every save). `localStorage` only ever holds ciphertext, so a copied profile, backup or stolen disk yields nothing usable. Code: `js/vault.js`.
@@ -234,7 +277,16 @@ Only needed for commercial use or if you already have a Google Cloud project; ot
 - **Never stored on anyone else's machine.** Each visitor's keys stay in their own browser. A key sent through the relay is forwarded for that request only.
 - **Tests go straight to the provider.** The **Test** button calls the provider's own API with the key you pasted, the same way the layer will.
 
-**The honest limit:** while unlocked, a script running *on this page* could use your keys — that's true of any browser app. The CSP narrows that sharply; the backstop is restricting each key at its provider (allowed URLs for Cesium ion, website + API restrictions and a budget alert for Google). The Windy free key has nothing billable on it.
+**The honest limit:** while unlocked, a script running *on this page* could use your keys — that's true of any browser app. The CSP narrows that sharply; the backstop is restricting each key at its provider:
+
+| Key | Restrict it like this |
+|---|---|
+| Windy Webcams | Free plan; nothing billable on it |
+| Cesium ion | `assets:read` scope only; Allowed URLs = your site |
+| Google Map Tiles | API restriction = Map Tiles API; website restriction = your site; budget alert |
+| TomTom | Free evaluation plan; domain whitelist if your dashboard offers it |
+| NASA FIRMS, AISStream | Free; regenerate the key if it leaks |
+| OpenAI | Dedicated project with usage limits / budget alerts; restricted permissions |
 
 No recovery: if you forget the passphrase, choose *Forget vault* and re-enter keys.
 

@@ -5,7 +5,7 @@
 // - Map tiles: cache-first. Recently viewed tiles live in a capped cache; areas the user explicitly
 //   saves ("Save area offline") live in 'gel-offline', which is never trimmed or version-cleaned.
 // - Live data APIs: network-only (the app itself keeps stale copies where useful).
-const VERSION = 'gel-v14';
+const VERSION = 'gel-v15';
 const SHELL = [
   './', './index.html', './css/app.css', './manifest.webmanifest',
   './js/boot.js', './js/app.js', './js/config.js', './js/util.js', './js/styles.js',
