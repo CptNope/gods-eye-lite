@@ -337,16 +337,20 @@ export class OutdoorTools {
     if (!('geolocation' in navigator)) return toast('Location isn’t supported in this browser');
     if (this.track.points.length && !confirm('Continue the saved track? (Cancel starts a new one.)')) this.track = { started: Date.now(), points: [] };
     if (!this.track.started) this.track.started = Date.now();
-    this.watch = navigator.geolocation.watchPosition((pos) => this.addPoint(pos), (err) => {
-      toast({ 1: 'Location permission is blocked — allow it to record.', 2: 'No GPS fix yet…', 3: 'Waiting for GPS…' }[err.code] || 'Location error', 4000);
+    let firstFix = true;
+    toast('Waiting for GPS… keep this screen open while recording.', 4000);
+    this.watch = navigator.geolocation.watchPosition((pos) => {
+      if (firstFix) { firstFix = false; toast('Recording — keep this screen open; phones pause web apps in the background.', 5000); }
+      this.addPoint(pos);
+    }, (err) => {
       if (err.code === 1) this.stopRecording();
+      toast({ 1: 'Location permission is blocked — allow it in your browser’s site settings to record.', 2: 'No GPS fix yet…', 3: 'Still waiting for GPS…' }[err.code] || 'Location error', 5000);
     }, { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 });
-    try { this.wake = await navigator.wakeLock?.request('screen'); } catch { /* not supported / denied */ }
+    try { const w = await navigator.wakeLock?.request('screen'); if (this.recording) this.wake = w; else w?.release?.(); } catch { /* not supported / denied */ }
     document.addEventListener('visibilitychange', this.reWake = async () => {
       if (document.visibilityState === 'visible' && this.recording) { try { this.wake = await navigator.wakeLock?.request('screen'); } catch { /* ignore */ } }
     });
     this.onChange();
-    toast('Recording — keep this screen open; phones pause web apps in the background.', 5000);
   }
 
   stopRecording() {
