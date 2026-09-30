@@ -13,8 +13,8 @@
     script-src 'self' https://cdn.jsdelivr.net 'wasm-unsafe-eval';
     worker-src 'self' blob: https://cdn.jsdelivr.net;
     style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net;
-    img-src 'self' data: blob: https://cdn.jsdelivr.net https://server.arcgisonline.com https://gibs.earthdata.nasa.gov https://*.basemaps.cartocdn.com https://tilecache.rainviewer.com https://nowcoast.noaa.gov https://*.cesium.com https://tile.googleapis.com https://cctv.austinmobility.io https://cwwp2.dot.ca.gov https://s3-eu-west-1.amazonaws.com https://511on.ca https://weathercam.digitraffic.fi https://www.drivebc.ca https://ristmikud.tallinn.ee https://tarktee.transpordiamet.ee https://webcams.transport.nsw.gov.au https://trafficcam.calgary.ca https://webcam.warendorf.de https://*.tile.opentopomap.org https://tile.waymarkedtrails.org https://basemap.nationalmap.gov;
-    connect-src 'self' https://cdn.jsdelivr.net https://celestrak.org https://earthquake.usgs.gov https://ll.thespacedevs.com https://server.arcgisonline.com https://gibs.earthdata.nasa.gov https://*.basemaps.cartocdn.com https://api.rainviewer.com https://tilecache.rainviewer.com https://api.open-meteo.com https://nowcoast.noaa.gov https://mapservices.weather.noaa.gov https://api.weather.gov https://photon.komoot.io https://nominatim.openstreetmap.org https://*.cesium.com https://tile.googleapis.com https://*.workers.dev https://*.tile.opentopomap.org https://tile.waymarkedtrails.org https://basemap.nationalmap.gov https://overpass-api.de;
+    img-src 'self' data: blob: https://cdn.jsdelivr.net https://server.arcgisonline.com https://gibs.earthdata.nasa.gov https://*.basemaps.cartocdn.com https://tilecache.rainviewer.com https://nowcoast.noaa.gov https://*.cesium.com https://tile.googleapis.com https://cctv.austinmobility.io https://cwwp2.dot.ca.gov https://s3-eu-west-1.amazonaws.com https://511on.ca https://weathercam.digitraffic.fi https://www.drivebc.ca https://ristmikud.tallinn.ee https://tarktee.transpordiamet.ee https://webcams.transport.nsw.gov.au https://trafficcam.calgary.ca https://webcam.warendorf.de https://*.tile.opentopomap.org https://tile.waymarkedtrails.org https://basemap.nationalmap.gov https://*.windy.com;
+    connect-src 'self' https://cdn.jsdelivr.net https://celestrak.org https://earthquake.usgs.gov https://ll.thespacedevs.com https://server.arcgisonline.com https://gibs.earthdata.nasa.gov https://*.basemaps.cartocdn.com https://api.rainviewer.com https://tilecache.rainviewer.com https://api.open-meteo.com https://nowcoast.noaa.gov https://mapservices.weather.noaa.gov https://api.weather.gov https://photon.komoot.io https://nominatim.openstreetmap.org https://*.cesium.com https://tile.googleapis.com https://*.workers.dev https://*.tile.opentopomap.org https://tile.waymarkedtrails.org https://basemap.nationalmap.gov https://overpass-api.de https://api.windy.com;
     font-src 'self' data: https://cdn.jsdelivr.net;
     manifest-src 'self';
     media-src 'none';
@@ -108,8 +108,9 @@
     <section>
       <h2>Cameras</h2>
       <label class="row"><input type="checkbox" data-layer="cctv" /> <span>📷 Public traffic cameras</span><em data-status="cctv"></em></label>
-      <button id="nearestCam" class="wide">🎯 Nearest camera to view</button>
-      <p class="hint">Live stills from city and highway operators in London, California, Finland, British Columbia, Tallinn, Austin, Sydney and Calgary. Click a camera to see its latest frame.</p>
+      <label class="row"><input type="checkbox" data-layer="webcams" /> <span>📹 Webcams (Windy, your key)</span><em data-status="webcams"></em></label>
+      <button id="nearestCam" class="wide">🎯 Nearest traffic camera to view</button>
+      <p class="hint">Live stills from city and highway operators in London, California, Finland, British Columbia, Tallinn, Austin, Sydney and Calgary. Click a camera to see its latest frame. Massachusetts highway cameras are licensed through TrafficLand and aren't openly published; Windy webcams need your own free key (⚡ Power up).</p>
     </section>
 
     <section>

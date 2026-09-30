@@ -6,6 +6,7 @@ import { LaunchesLayer } from './layers/launches.js';
 import { RadarLayer, CloudsLayer, LightningLayer, WindLayer, CyclonesLayer, AlertsLayer } from './layers/weather.js';
 import { Timeline } from './timeline.js';
 import { CctvLayer } from './layers/cctv.js';
+import { WebcamsLayer } from './layers/webcams.js';
 import { initSearch } from './search.js';
 import { TILESETS, provider, TileOverlay } from './tiles.js';
 import { OutdoorPoiLayer, OutdoorTools, makeUnits } from './outdoor.js';
@@ -160,6 +161,7 @@ const layers = {
   trails: new TileOverlay(viewer, 'trails', { alpha: 0.95 }),
   bike: new TileOverlay(viewer, 'bike', { alpha: 0.9 }),
   poi: new OutdoorPoiLayer(viewer, units),
+  webcams: new WebcamsLayer(viewer, { getKey: () => keyFor('windy'), getCenter: viewCenter, openKeys: () => keysUI.open() }),
   tools: outdoor,
 };
 const active = new Set();
@@ -329,7 +331,7 @@ function select(id) {
   $('#card').hidden = false;
   if (window.innerWidth < 640) $('#panel').classList.add('closed'); // card and panel share the screen on phones
   const p = positionOfSelected();
-  const range = { satellite: 2.5e6, aircraft: 40000, storm: 1.8e6, alert: 600000, camera: 1200, poi: 3000 }[id.kind] || 400000;
+  const range = { satellite: 2.5e6, aircraft: 40000, storm: 1.8e6, alert: 600000, camera: 1200, poi: 3000, webcam: 3000 }[id.kind] || 400000;
   if (p) flyToPos(p, range);
   if (canFollow) $('#followBtn').addEventListener('click', () => (following ? stopFollow() : startFollow()));
 }
@@ -448,6 +450,7 @@ const keysUI = initKeysUI({
 $('#settingsBtn').addEventListener('click', () => keysUI.open());
 $('#lockChip').addEventListener('click', () => keysUI.open());
 vault.onChange(applyKeys);
+vault.onChange(() => layers.webcams.keysChanged());
 
 // ---------- PWA: service worker + install ----------
 if ('serviceWorker' in navigator) {

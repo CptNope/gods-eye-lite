@@ -5,13 +5,13 @@
 // - Map tiles: cache-first. Recently viewed tiles live in a capped cache; areas the user explicitly
 //   saves ("Save area offline") live in 'gel-offline', which is never trimmed or version-cleaned.
 // - Live data APIs: network-only (the app itself keeps stale copies where useful).
-const VERSION = 'gel-v11';
+const VERSION = 'gel-v12';
 const SHELL = [
   './', './index.html', './css/app.css', './manifest.webmanifest',
   './js/boot.js', './js/app.js', './js/config.js', './js/util.js', './js/styles.js',
   './js/vault.js', './js/keys.js', './js/timeline.js', './js/search.js', './js/tiles.js', './js/outdoor.js',
   './js/layers/flights.js', './js/layers/satellites.js', './js/layers/quakes.js', './js/layers/launches.js',
-  './js/layers/weather.js', './js/layers/cctv.js',
+  './js/layers/weather.js', './js/layers/cctv.js', './js/layers/webcams.js',
   './icons/icon-192.png', './icons/icon-512.png',
 ];
 const TILE_HOSTS = ['server.arcgisonline.com', 'gibs.earthdata.nasa.gov', 'basemaps.cartocdn.com', 'tilecache.rainviewer.com', 'tile.opentopomap.org', 'tile.waymarkedtrails.org', 'basemap.nationalmap.gov'];

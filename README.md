@@ -13,6 +13,7 @@ A static, installable PWA that puts the **keyless** feeds from
 | 🌍 Earthquakes, last 24h | USGS | none |
 | 🚀 Upcoming launches + countdown list | Launch Library 2 (The Space Devs) | none |
 | 📷 ~2,400 public traffic cameras with live stills: London, California, Finland, British Columbia, Tallinn, Austin, Sydney, Calgary | Catalog built daily on GitHub Actions with God's Eye View's MIT CCTV loaders; images load straight from each operator | none |
+| 📹 Public webcams near your view (scenic, weather, town cams) | Windy Webcams API with **your own free key** (⚡ Power up) | free key |
 | 🔎 Address & place search with suggestions, plus 📍 your device location | Photon (komoot) type-ahead, Nominatim on Enter, both OpenStreetMap; browser Geolocation API | none |
 | 🥾 Hiking & MTB trail overlays, terrain shading | Waymarked Trails, Esri World Hillshade | none |
 | 🗺️ Topo basemaps | OpenTopoMap (worldwide), USGS National Map (US) | none |
@@ -68,7 +69,7 @@ Free tier = 100,000 requests/day; with the built-in caching one active viewer us
 
 ## Traffic cameras: how the catalog works
 
-Most operators' camera *lists* refuse browser requests (no CORS), but their still *images* embed fine. So `scripts/build-cctv.mjs` runs inside the Pages workflow: it checks out God's Eye View at a pinned commit (`GEV_SHA` in `.github/workflows/pages.yml`), runs its CCTV loaders on the GitHub runner, keeps cameras whose still image is on an allowed host, and publishes `data/cctv.json` (~590 KB, gzip-served). A daily scheduled run keeps it fresh; if a source is down the deploy still ships. Image hosts are allowlisted in both the script and the page's CSP `img-src` — add a host to both to add a region. Not included: Ontario 511 (list unreachable from GitHub runners at build time), TxDOT (snapshot API isn't a plain image), Delaware (video-only), Estonia highways.
+Most operators' camera *lists* refuse browser requests (no CORS), but their still *images* embed fine. So `scripts/build-cctv.mjs` runs inside the Pages workflow: it checks out God's Eye View at a pinned commit (`GEV_SHA` in `.github/workflows/pages.yml`), runs its CCTV loaders on the GitHub runner, keeps cameras whose still image is on an allowed host, and publishes `data/cctv.json` (~590 KB, gzip-served). A daily scheduled run keeps it fresh; if a source is down the deploy still ships. Image hosts are allowlisted in both the script and the page's CSP `img-src` — add a host to both to add a region. **Massachusetts:** MassDOT highway cameras are only available through its licensed partner TrafficLand (see mass.gov "Highway data for developers"); Mass511 isn't an open feed, so it isn't scraped. Not included: Ontario 511 (list unreachable from GitHub runners at build time), TxDOT (snapshot API isn't a plain image), Delaware (video-only), Estonia highways.
 
 ## API keys: bring your own, encrypted on your device
 
