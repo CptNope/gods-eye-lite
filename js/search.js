@@ -70,12 +70,24 @@ export function initSearch({ viewer, getCenter }) {
   async function suggest(q) {
     const my = ++seq;
     const c = getCenter();
-    const params = new URLSearchParams({ q, limit: '6', lang: 'en' });
-    if (c) { params.set('lat', c.lat.toFixed(3)); params.set('lon', c.lon.toFixed(3)); }
+    const params = new URLSearchParams({ q, limit: '10', lang: 'en' });
+    if (c) {
+      // Bias toward the view, scaled to zoom: street-level views favour nearby matches, globe views barely
+      // do. location_bias_scale 0.6 keeps well-known places (e.g. "Worcester MA" from London) on top.
+      const h = viewer.camera.positionCartographic.height;
+      const zoom = Math.max(3, Math.min(14, Math.round(Math.log2(4e7 / Math.max(h, 1)))));
+      params.set('lat', c.lat.toFixed(3)); params.set('lon', c.lon.toFixed(3));
+      params.set('zoom', String(zoom)); params.set('location_bias_scale', '0.6');
+    }
     try {
       const j = await fetchJson(`${PHOTON}?${params}`, { timeout: 8000 });
       if (my !== seq) return; // a newer keystroke won
-      results = (j.features || []).map(fromPhoton);
+      const seen = new Set();
+      results = (j.features || []).map(fromPhoton).filter((r) => {
+        const k = `${r.title}|${r.sub}`; // OSM often has a node and an area for one place
+        if (seen.has(k)) return false;
+        seen.add(k); return true;
+      }).slice(0, 6);
       active = results.length ? 0 : -1;
       render();
     } catch {
