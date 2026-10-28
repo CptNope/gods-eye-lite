@@ -309,3 +309,7 @@ The original God's Eye View is a Vite app with a Node server that brokers secret
 ## Credits
 
 Concept and data-source map from [God's Eye View](https://github.com/bilawalsidhu/gods-eye-view) by Bilawal Sidhu & Sameh Khamis (MIT); its CCTV loaders build the camera list. This is an independent lite client, not affiliated with Halfpixel. Data © their respective providers: CelesTrak, USGS, The Space Devs, NOAA (nowCOAST, NHC, NWS), RainViewer, Open-Meteo, Esri, NASA GIBS, OpenStreetMap contributors (via CARTO, OpenTopoMap, Waymarked Trails, Photon/komoot, Nominatim, Overpass), USGS The National Map, Windy.com, Cesium / Google, and the camera operators listed in the app (TfL, Caltrans, Fintraffic, DriveBC, City of Tallinn, Austin TPW, Live Traffic NSW, City of Calgary).
+
+---
+
+Built by [Jeremy Anderson Tech](https://jeremyanderson.tech/), a web development and security practice in Shrewsbury, MA. Read more on the [project page](https://jeremyanderson.tech/project/gods-eye-lite/). [Services](https://jeremyanderson.tech/services/)
